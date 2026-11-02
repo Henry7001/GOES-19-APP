@@ -53,6 +53,7 @@ Para el monitoreo de tormentas severas en el trópico (especialmente en la cuenc
  RGB Convección Intensa             Compuesto Diferencial Corrientes ascendentes vigorosas / Granizo
  RGB Masas de Aire                  Compuesto B08/B10/IR Dinámica de chorros, vaguadas y humedad
  GeoColor                           Visible + IR         Color natural diurno y nubes infrarrojas
+ GLM (Lightning Mapper)             777.4 nm             Detección de rayos e impactos en tiempo real
  ──────────────────────────────────────────────────────────────────────────────────────────
 ```
 

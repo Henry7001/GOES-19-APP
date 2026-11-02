@@ -37,6 +37,10 @@
           <span class="t-value mono" id="header-local-time">--:-- EC</span>
         </div>
         <div class="telemetry-item">
+          <span class="t-label">RAYOS EC</span>
+          <span class="t-value mono text-amber" id="header-lightning-count">0</span>
+        </div>
+        <div class="telemetry-item">
           <span class="t-label">CADENCIA</span>
           <span class="t-value mono text-accent" id="header-countdown">10:00</span>
         </div>
@@ -159,6 +163,21 @@
           </div>
 
           <div class="toggle-group">
+            <label class="toggle-row highlight-row">
+              <div class="toggle-label-with-badge">
+                <span class="toggle-text">⚡ Detector de Rayos (GLM Tiempo Real)</span>
+                <span class="pill-badge pill-amber" id="lightning-count-badge">0 ACTIVOS</span>
+              </div>
+              <input type="checkbox" id="toggle-lightning" checked>
+              <span class="toggle-switch"></span>
+            </label>
+
+            <label class="toggle-row sub-toggle">
+              <span class="toggle-text">Alerta Sonora al Detectar Impacto Cercano</span>
+              <input type="checkbox" id="toggle-lightning-sound">
+              <span class="toggle-switch"></span>
+            </label>
+
             <label class="toggle-row">
               <span class="toggle-text">Capa Satélite Esri (Desactivar para Calles OSM)</span>
               <input type="checkbox" id="toggle-basemap" checked>
