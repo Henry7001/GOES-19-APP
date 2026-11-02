@@ -35,12 +35,15 @@ let capaCalles;
 let capaSateliteBase;
 let capaLimites;
 let grupoCiudades;
+let marcadorUsuario = null;
+let circuloPrecision = null;
 
 document.addEventListener('DOMContentLoaded', () => {
   iniciarMapa();
   vincularEventosInterfaz();
   cargarDatosSatelitales();
   iniciarContadorRecarga();
+  solicitarUbicacionUsuario(false);
 });
 
 function iniciarMapa() {
@@ -238,6 +241,13 @@ function vincularEventosInterfaz() {
     }
   });
 
+  const botonLocate = document.getElementById('btn-locate');
+  if (botonLocate) {
+    botonLocate.addEventListener('click', () => {
+      solicitarUbicacionUsuario(true);
+    });
+  }
+
   document.getElementById('btn-refresh').addEventListener('click', () => {
     segundosRestantes = 600;
     cargarDatosSatelitales();
@@ -341,4 +351,101 @@ function mostrarEstadoCarga(cargando, mensaje = 'Sincronizando...') {
     if (mensaje && etiqueta) etiqueta.innerText = mensaje;
     banner.classList.toggle('active', cargando);
   }
+}
+
+function solicitarUbicacionUsuario(centrarAlEncontrar = false) {
+  if (!navigator.geolocation) {
+    if (centrarAlEncontrar) {
+      alert('Tu navegador no soporta geolocalización.');
+    }
+    return;
+  }
+
+  const botonLocate = document.getElementById('btn-locate');
+  if (botonLocate) {
+    botonLocate.classList.add('active-locating');
+  }
+
+  if (centrarAlEncontrar) {
+    mostrarEstadoCarga(true, 'Detectando tu ubicación...');
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    (posicion) => {
+      const lat = posicion.coords.latitude;
+      const lon = posicion.coords.longitude;
+      const precision = posicion.coords.accuracy;
+
+      if (marcadorUsuario) {
+        mapa.removeLayer(marcadorUsuario);
+      }
+      if (circuloPrecision) {
+        mapa.removeLayer(circuloPrecision);
+      }
+
+      // Marcador con efecto radar
+      const iconoUbicacion = L.divIcon({
+        className: 'user-marker-container',
+        html: '<div class="user-marker-pulse"></div><div class="user-marker-dot"></div>',
+        iconSize: [32, 32],
+        iconAnchor: [16, 16]
+      });
+
+      marcadorUsuario = L.marker([lat, lon], {
+        icon: iconoUbicacion,
+        zIndexOffset: 1000
+      }).addTo(mapa);
+
+      marcadorUsuario.bindPopup(`
+        <div style="font-family: var(--font-body); font-size: 0.8rem; color: #1e293b; padding: 2px;">
+          <b style="color: #0284c7;">📍 Tu Ubicación Actual</b><br>
+          <span style="font-family: var(--font-mono); font-size: 0.72rem;">Lat: ${lat.toFixed(4)}, Lon: ${lon.toFixed(4)}</span><br>
+          <span style="font-size: 0.7rem; color: #64748b;">Precisión: ±${Math.round(precision)} metros</span>
+        </div>
+      `);
+
+      if (precision > 20) {
+        circuloPrecision = L.circle([lat, lon], {
+          radius: precision,
+          color: '#06b6d4',
+          fillColor: '#06b6d4',
+          fillOpacity: 0.12,
+          weight: 1
+        }).addTo(mapa);
+      }
+
+      if (centrarAlEncontrar) {
+        mapa.flyTo([lat, lon], 12, { duration: 1.2 });
+        marcadorUsuario.openPopup();
+        mostrarEstadoCarga(false);
+      }
+
+      if (botonLocate) {
+        botonLocate.classList.remove('active-locating');
+      }
+    },
+    (error) => {
+      if (botonLocate) {
+        botonLocate.classList.remove('active-locating');
+      }
+      mostrarEstadoCarga(false);
+
+      if (centrarAlEncontrar) {
+        let mensaje = 'No fue posible obtener tu ubicación.';
+        if (error.code === error.PERMISSION_DENIED) {
+          mensaje = 'Permiso denegado para acceder a la ubicación. Puedes habilitarlo en los permisos del navegador.';
+        } else if (error.code === error.POSITION_UNAVAILABLE) {
+          mensaje = 'La ubicación no está disponible en este momento.';
+        } else if (error.code === error.TIMEOUT) {
+          mensaje = 'Tiempo de espera agotado al consultar tu ubicación.';
+        }
+        alert(mensaje);
+      }
+    },
+    {
+      enableHighAccuracy: true,
+      timeout: 10000,
+      maximumAge: 60000
+    }
+  );
 }
