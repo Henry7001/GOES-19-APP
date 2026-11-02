@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>GOES-19 • Ecuador Storm Monitor</title>
+  <!-- Modern Engineering & Tactical Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app-root">
+    <!-- Map Container -->
+    <div id="map"></div>
+
+    <!-- Minimal Pro Header Bar -->
+    <header class="app-header">
+      <div class="brand-cluster">
+        <span class="live-dot" title="Transmisión Activa"></span>
+        <div class="brand-titles">
+          <span class="brand-code">GOES-19 // ABI-L2</span>
+          <span class="brand-region">ECUADOR &bull; GALÁPAGOS <b style="color:var(--accent-cyan); font-weight:500;">| Por Henry Ruiz</b></span>
+        </div>
+      </div>
+
+      <div class="telemetry-bar">
+        <div class="telemetry-item">
+          <span class="t-label">CORTE SATÉLITE</span>
+          <span class="t-value mono" id="header-timestamp">--:-- UTC</span>
+        </div>
+        <div class="telemetry-item hide-on-mobile">
+          <span class="t-label">HORA LOCAL</span>
+          <span class="t-value mono" id="header-local-time">--:-- EC</span>
+        </div>
+        <div class="telemetry-item">
+          <span class="t-label">CADENCIA</span>
+          <span class="t-value mono text-accent" id="header-countdown">10:00</span>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <button id="btn-refresh" class="tool-btn" aria-label="Actualizar satélite" title="Forzar escaneo satelital">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-1.19"/>
+          </svg>
+        </button>
+        <button id="btn-toggle-sidebar" class="tool-btn mobile-menu-btn" aria-label="Abrir panel" title="Menu de control">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="4" y1="6" x2="20" y2="6"></line>
+            <line x1="4" y1="12" x2="20" y2="12"></line>
+            <line x1="4" y1="18" x2="20" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Side Control Drawer (Desktop Sidebar / Mobile Bottom Sheet) -->
+    <aside class="control-drawer" id="control-drawer">
+      <div class="drawer-header">
+        <span class="drawer-title">CONSOLA METEOROLÓGICA</span>
+        <button class="drawer-close-btn" id="btn-close-sidebar" aria-label="Cerrar panel">✕</button>
+      </div>
+
+      <div class="drawer-scroll">
+        <!-- Section: Satellite Layer Selection -->
+        <div class="drawer-section">
+          <div class="section-label">CANAL MULTIESPECTRAL ABI</div>
+          <div class="layer-list">
+            
+            <label class="layer-option active" data-layer="G19-ABI-FD-BAND13-GRAD">
+              <input type="radio" name="satellite-channel" value="G19-ABI-FD-BAND13-GRAD" checked>
+              <div class="layer-info">
+                <div class="layer-title-row">
+                  <span class="l-name">Banda 13 Infrarrojo Térmico</span>
+                  <span class="pill-badge pill-red">TORMENTAS</span>
+                </div>
+                <p class="l-desc">10.3 µm Clean IR con realce dinámico de cimas frías (&lt; -65°C).</p>
+              </div>
+            </label>
+
+            <label class="layer-option" data-layer="G19-ABI-FD-night-microphysics">
+              <input type="radio" name="satellite-channel" value="G19-ABI-FD-night-microphysics">
+              <div class="layer-info">
+                <div class="layer-title-row">
+                  <span class="l-name">Microfísica Nocturna RGB</span>
+                  <span class="pill-badge pill-blue">NOCTURNO</span>
+                </div>
+                <p class="l-desc">Discriminación de nubes densas convectivas vs estratos bajos.</p>
+              </div>
+            </label>
+
+            <label class="layer-option" data-layer="G19-ABI-FD-airmass">
+              <input type="radio" name="satellite-channel" value="G19-ABI-FD-airmass">
+              <div class="layer-info">
+                <div class="layer-title-row">
+                  <span class="l-name">Masas de Aire RGB</span>
+                </div>
+                <p class="l-desc">Vórtices, corrientes de chorro y humedad de origen amazónico.</p>
+              </div>
+            </label>
+
+            <label class="layer-option" data-layer="G19-ABI-FD-convection">
+              <input type="radio" name="satellite-channel" value="G19-ABI-FD-convection">
+              <div class="layer-info">
+                <div class="layer-title-row">
+                  <span class="l-name">Convección Severa RGB</span>
+                </div>
+                <p class="l-desc">Detección de corrientes ascendentes en desarrollo vigoroso.</p>
+              </div>
+            </label>
+
+            <label class="layer-option" data-layer="G19-ABI-FD-BAND11">
+              <input type="radio" name="satellite-channel" value="G19-ABI-FD-BAND11">
+              <div class="layer-info">
+                <div class="layer-title-row">
+                  <span class="l-name">Banda 11 Fase Nubosa</span>
+                </div>
+                <p class="l-desc">8.4 µm: Diferenciación entre cristales de hielo y agua líquida.</p>
+              </div>
+            </label>
+
+            <label class="layer-option" data-layer="G19-ABI-FD-geo-color">
+              <input type="radio" name="satellite-channel" value="G19-ABI-FD-geo-color">
+              <div class="layer-info">
+                <div class="layer-title-row">
+                  <span class="l-name">GeoColor</span>
+                </div>
+                <p class="l-desc">Visualización de color verdadero diurno y nubes infrarrojas nocturnas.</p>
+              </div>
+            </label>
+
+          </div>
+        </div>
+
+        <!-- Section: Tuning & Visibility -->
+        <div class="drawer-section">
+          <div class="section-label">PARÁMETROS VISUALES</div>
+
+          <div class="slider-control">
+            <div class="slider-header">
+              <span>Opacidad Satélite</span>
+              <span class="slider-readout mono" id="opacity-readout">85%</span>
+            </div>
+            <input type="range" id="opacity-slider" min="10" max="100" value="85" class="range-input">
+          </div>
+
+          <div class="toggle-group">
+            <label class="toggle-row">
+              <span class="toggle-text">Capa Satélite Esri (Desactivar para Calles OSM)</span>
+              <input type="checkbox" id="toggle-basemap" checked>
+              <span class="toggle-switch"></span>
+            </label>
+
+            <label class="toggle-row">
+              <span class="toggle-text">Límites y Red Vial Nacional</span>
+              <input type="checkbox" id="toggle-boundaries" checked>
+              <span class="toggle-switch"></span>
+            </label>
+
+            <label class="toggle-row">
+              <span class="toggle-text">Marcadores de Referencia (Ciudades)</span>
+              <input type="checkbox" id="toggle-cities" checked>
+              <span class="toggle-switch"></span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Section: Regions -->
+        <div class="drawer-section">
+          <div class="section-label">ENFOQUE TERRITORIAL</div>
+          <div class="segmented-control">
+            <button class="seg-btn active" data-region="country">Ecuador</button>
+            <button class="seg-btn" data-region="costa">Costa</button>
+            <button class="seg-btn" data-region="sierra">Sierra</button>
+            <button class="seg-btn" data-region="oriente">Oriente</button>
+            <button class="seg-btn" data-region="galapagos">Galápagos</button>
+          </div>
+        </div>
+
+        <div style="padding: 12px 4px 4px 4px; border-top: 1px solid var(--panel-border); font-size: 0.68rem; color: var(--text-muted); display:flex; justify-content:space-between; align-items:center;">
+          <span>Desarrollado por <b>Henry Ruiz</b></span>
+          <span class="mono">v1.2</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Floating Thermal Legend -->
+    <div class="floating-legend" id="floating-legend">
+      <div class="fl-top">
+        <span class="fl-title" id="legend-product-title">Infrarrojo B13 (Clean IR)</span>
+        <span class="fl-crit" id="legend-product-sub">Tormenta severa: &lt; -65°C</span>
+      </div>
+      <div class="fl-bar-wrap">
+        <div class="fl-bar" id="legend-bar"></div>
+      </div>
+      <div class="fl-labels mono" id="legend-labels">
+        <span>+30°</span>
+        <span>0°</span>
+        <span>-30°</span>
+        <span>-50°</span>
+        <span class="crit">-65° (Tormenta)</span>
+        <span class="crit">-85°C</span>
+      </div>
+    </div>
+
+    <!-- Subtle Loading Indicator -->
+    <div class="sync-banner" id="sync-banner">
+      <span class="sync-spin"></span>
+      <span id="sync-label">Sincronizando pasada GOES-19...</span>
+    </div>
+  </div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="app.js"></script>
+</body>
+</html>
