@@ -450,14 +450,33 @@ function estaEnTerritorioEcuador(lon, lat) {
   return false;
 }
 
+// Helper seguro para persistencia en memoria local del navegador (localStorage)
+const Memoria = {
+  obtener(clave, valorPorDefecto = null) {
+    try {
+      const val = localStorage.getItem(clave);
+      return val !== null ? val : valorPorDefecto;
+    } catch (e) {
+      return valorPorDefecto;
+    }
+  },
+  guardar(clave, valor) {
+    try {
+      localStorage.setItem(clave, valor.toString());
+    } catch (e) {
+      // Modo incógnito restringido
+    }
+  }
+};
+
 let mapa;
 let capaSatelite = null;
 let capaEnCarga = null;
-let productoActual = 'G19-ABI-FD-BAND13-GRAD';
-let opacidadActual = 0.85;
+let productoActual = Memoria.obtener('producto_satelital_actual', 'G19-ABI-FD-BAND13-GRAD');
+let opacidadActual = parseFloat(Memoria.obtener('opacidad_satelite', '0.85'));
 let horaActualSatelite = null;
 
-let cadenciaSegundos = parseInt(localStorage.getItem('cadencia_segundos_goes19') || '600', 10);
+let cadenciaSegundos = parseInt(Memoria.obtener('cadencia_segundos_goes19', '600'), 10);
 let tiempoProximaRecarga = Date.now() + cadenciaSegundos * 1000;
 let temporizadorRecarga = null;
 let recargaEnProgreso = false;
@@ -471,8 +490,8 @@ let capaDensidadRayos = null;
 let marcadorUsuario = null;
 let circuloPrecision = null;
 
-let detectorRayosActivo = true;
-let alertaSonoraRayosActiva = false;
+let detectorRayosActivo = Memoria.obtener('detector_rayos_activo', 'true') !== 'false';
+let alertaSonoraRayosActiva = Memoria.obtener('alerta_sonora_rayos_activa', 'false') === 'true';
 let temporizadorRayos = null;
 let ultimoConteoRayos = 0;
 let coordenadasUsuarioActual = null;
@@ -501,9 +520,20 @@ function iniciarMapa() {
     L.latLng(2.8, -74.0)
   );
 
+  // Restaurar posición exacta donde el usuario dejó el mapa
+  const latGuardada = parseFloat(Memoria.obtener('mapa_centro_lat'));
+  const lonGuardada = parseFloat(Memoria.obtener('mapa_centro_lon'));
+  const zoomGuardado = parseInt(Memoria.obtener('mapa_zoom'), 10);
+
+  const hayPosicionGuardada = !isNaN(latGuardada) && !isNaN(lonGuardada) && !isNaN(zoomGuardado) &&
+    latGuardada >= -6.5 && latGuardada <= 3.0 && lonGuardada >= -94.0 && lonGuardada <= -73.0;
+
+  const centroInicial = hayPosicionGuardada ? [latGuardada, lonGuardada] : DIVISION_TERRITORIAL.pais.centro;
+  const zoomInicial = hayPosicionGuardada ? zoomGuardado : DIVISION_TERRITORIAL.pais.zoom;
+
   mapa = L.map('map', {
-    center: DIVISION_TERRITORIAL.pais.centro,
-    zoom: DIVISION_TERRITORIAL.pais.zoom,
+    center: centroInicial,
+    zoom: zoomInicial,
     minZoom: 6,
     maxZoom: 18,
     maxBounds: limitesEcuador,
@@ -521,19 +551,86 @@ function iniciarMapa() {
   capaSateliteBase = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
     attribution: 'Esri Satellite',
     maxZoom: 18
-  }).addTo(mapa);
+  });
+
+  // Restaurar capa base (Esri Satélite vs Calles OSM)
+  const basemapSateliteActivo = Memoria.obtener('mapa_base_satelite', 'true') !== 'false';
+  if (basemapSateliteActivo) {
+    capaSateliteBase.addTo(mapa);
+  } else {
+    capaCalles.addTo(mapa);
+  }
 
   capaLimites = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
     zIndex: 500,
     maxZoom: 18
-  }).addTo(mapa);
+  });
 
-  grupoRayos = L.layerGroup().addTo(mapa);
+  // Restaurar límites y carreteras
+  const limitesActivos = Memoria.obtener('capa_limites_activa', 'true') !== 'false';
+  if (limitesActivos) {
+    capaLimites.addTo(mapa);
+  }
+
+  // Restaurar capa de rayos
+  grupoRayos = L.layerGroup();
+  if (detectorRayosActivo) {
+    grupoRayos.addTo(mapa);
+  }
+
+  // Restaurar ubicación registrada previa del usuario (sin volver a pedir permisos)
+  restaurarUbicacionUsuarioGuardada();
 
   mapa.on('moveend', () => {
+    // Guardar coordenadas y nivel de zoom para abrir exactamente donde se dejó
+    const centro = mapa.getCenter();
+    Memoria.guardar('mapa_centro_lat', centro.lat.toFixed(5));
+    Memoria.guardar('mapa_centro_lon', centro.lng.toFixed(5));
+    Memoria.guardar('mapa_zoom', mapa.getZoom().toString());
+
     clearTimeout(temporizadorMovimiento);
     temporizadorMovimiento = setTimeout(renderizarImagenSatelital, 300);
   });
+}
+
+function restaurarUbicacionUsuarioGuardada() {
+  const latU = parseFloat(Memoria.obtener('usuario_lat_guardada'));
+  const lonU = parseFloat(Memoria.obtener('usuario_lon_guardada'));
+  const precisionU = parseFloat(Memoria.obtener('usuario_precision_guardada')) || 25;
+
+  if (!isNaN(latU) && !isNaN(lonU)) {
+    coordenadasUsuarioActual = { lat: latU, lon: lonU };
+
+    const iconoUbicacion = L.divIcon({
+      className: 'user-marker-container',
+      html: '<div class="user-marker-pulse"></div><div class="user-marker-dot"></div>',
+      iconSize: [32, 32],
+      iconAnchor: [16, 16]
+    });
+
+    marcadorUsuario = L.marker([latU, lonU], {
+      icon: iconoUbicacion,
+      zIndexOffset: 1000
+    }).addTo(mapa);
+
+    marcadorUsuario.bindPopup(`
+      <div style="font-family: var(--font-body); font-size: 0.8rem; color: #1e293b; padding: 2px;">
+        <b style="color: #0284c7;">📍 Tu Ubicación Registrada</b><br>
+        <span style="font-family: var(--font-mono); font-size: 0.72rem;">Lat: ${latU.toFixed(4)}, Lon: ${lonU.toFixed(4)}</span><br>
+        <span style="font-size: 0.7rem; color: #64748b;">(Guardada en memoria local)</span>
+      </div>
+    `);
+
+    if (precisionU > 20) {
+      circuloPrecision = L.circle([latU, lonU], {
+        radius: precisionU,
+        color: '#06b6d4',
+        fillColor: '#06b6d4',
+        fillOpacity: 0.12,
+        weight: 1
+      }).addTo(mapa);
+    }
+  }
 }
 
 async function cargarDatosSatelitales() {
@@ -679,14 +776,24 @@ function actualizarRelojesCabecera(cadenaHora) {
 
 function vincularEventosInterfaz() {
   const opcionesCanal = document.querySelectorAll('.layer-option');
+
+  // Restaurar producto satelital activo guardado
   opcionesCanal.forEach(opcion => {
+    const inputRadio = opcion.querySelector('input[type="radio"]');
+    if (inputRadio && inputRadio.value === productoActual) {
+      opcionesCanal.forEach(item => item.classList.remove('active'));
+      opcion.classList.add('active');
+      inputRadio.checked = true;
+    }
+
     opcion.addEventListener('click', () => {
       opcionesCanal.forEach(item => item.classList.remove('active'));
       opcion.classList.add('active');
 
-      const inputRadio = opcion.querySelector('input[type="radio"]');
-      inputRadio.checked = true;
-      productoActual = inputRadio.value;
+      const radio = opcion.querySelector('input[type="radio"]');
+      radio.checked = true;
+      productoActual = radio.value;
+      Memoria.guardar('producto_satelital_actual', productoActual);
       horaActualSatelite = null;
 
       actualizarLeyendaTermica(productoActual);
@@ -694,39 +801,57 @@ function vincularEventosInterfaz() {
     });
   });
 
+  // Restaurar y vincular deslizador de opacidad
   const deslizadorOpacidad = document.getElementById('opacity-slider');
   const visorOpacidad = document.getElementById('opacity-readout');
-  deslizadorOpacidad.addEventListener('input', (evento) => {
-    opacidadActual = evento.target.value / 100;
-    visorOpacidad.innerText = `${evento.target.value}%`;
-    if (capaSatelite) {
-      capaSatelite.setOpacity(opacidadActual);
-    }
-  });
+  if (deslizadorOpacidad) {
+    const porcentajeOpacidad = Math.round(opacidadActual * 100);
+    deslizadorOpacidad.value = porcentajeOpacidad;
+    if (visorOpacidad) visorOpacidad.innerText = `${porcentajeOpacidad}%`;
 
+    deslizadorOpacidad.addEventListener('input', (evento) => {
+      opacidadActual = evento.target.value / 100;
+      Memoria.guardar('opacidad_satelite', opacidadActual.toString());
+      if (visorOpacidad) visorOpacidad.innerText = `${evento.target.value}%`;
+      if (capaSatelite) {
+        capaSatelite.setOpacity(opacidadActual);
+      }
+    });
+  }
+
+  // Restaurar y vincular capa base
   const toggleMapaBase = document.getElementById('toggle-basemap');
-  toggleMapaBase.addEventListener('change', (evento) => {
-    if (evento.target.checked) {
-      mapa.removeLayer(capaCalles);
-      mapa.addLayer(capaSateliteBase);
-    } else {
-      mapa.removeLayer(capaSateliteBase);
-      mapa.addLayer(capaCalles);
-    }
-  });
+  if (toggleMapaBase) {
+    toggleMapaBase.checked = Memoria.obtener('mapa_base_satelite', 'true') !== 'false';
+    toggleMapaBase.addEventListener('change', (evento) => {
+      Memoria.guardar('mapa_base_satelite', evento.target.checked ? 'true' : 'false');
+      if (evento.target.checked) {
+        mapa.removeLayer(capaCalles);
+        mapa.addLayer(capaSateliteBase);
+      } else {
+        mapa.removeLayer(capaSateliteBase);
+        mapa.addLayer(capaCalles);
+      }
+    });
+  }
 
+  // Restaurar y vincular límites nacionales
   const toggleLimites = document.getElementById('toggle-boundaries');
-  toggleLimites.addEventListener('change', (evento) => {
-    if (evento.target.checked) {
-      mapa.addLayer(capaLimites);
-    } else {
-      mapa.removeLayer(capaLimites);
-    }
-  });
+  if (toggleLimites) {
+    toggleLimites.checked = Memoria.obtener('capa_limites_activa', 'true') !== 'false';
+    toggleLimites.addEventListener('change', (evento) => {
+      Memoria.guardar('capa_limites_activa', evento.target.checked ? 'true' : 'false');
+      if (evento.target.checked) {
+        mapa.addLayer(capaLimites);
+      } else {
+        mapa.removeLayer(capaLimites);
+      }
+    });
+  }
 
   const toggleLeyenda = document.getElementById('toggle-legend');
   if (toggleLeyenda) {
-    toggleLeyenda.checked = localStorage.getItem('leyenda_termica_visible') !== 'false';
+    toggleLeyenda.checked = Memoria.obtener('leyenda_termica_visible', 'true') !== 'false';
     aplicarVisibilidadLeyenda(toggleLeyenda.checked);
     toggleLeyenda.addEventListener('change', (evento) => {
       aplicarVisibilidadLeyenda(evento.target.checked);
@@ -742,10 +867,20 @@ function vincularEventosInterfaz() {
     });
   }
 
+  // Restaurar y vincular detector de rayos
   const toggleRayos = document.getElementById('toggle-lightning');
   if (toggleRayos) {
+    toggleRayos.checked = detectorRayosActivo;
+    if (!detectorRayosActivo) {
+      const contadorCabecera = document.getElementById('header-lightning-count');
+      const badgeContador = document.getElementById('lightning-count-badge');
+      if (contadorCabecera) contadorCabecera.innerText = 'OFF';
+      if (badgeContador) badgeContador.innerText = 'DESACTIVADO';
+    }
+
     toggleRayos.addEventListener('change', (evento) => {
       detectorRayosActivo = evento.target.checked;
+      Memoria.guardar('detector_rayos_activo', detectorRayosActivo ? 'true' : 'false');
       if (detectorRayosActivo) {
         if (!mapa.hasLayer(grupoRayos)) mapa.addLayer(grupoRayos);
         actualizarDetectorRayos();
@@ -759,10 +894,13 @@ function vincularEventosInterfaz() {
     });
   }
 
+  // Restaurar y vincular alerta sonora
   const toggleSonido = document.getElementById('toggle-lightning-sound');
   if (toggleSonido) {
+    toggleSonido.checked = alertaSonoraRayosActiva;
     toggleSonido.addEventListener('change', (evento) => {
       alertaSonoraRayosActiva = evento.target.checked;
+      Memoria.guardar('alerta_sonora_rayos_activa', alertaSonoraRayosActiva ? 'true' : 'false');
       if (alertaSonoraRayosActiva) {
         reproducirSonidoRayo(true); // Tono de prueba
       }
@@ -874,14 +1012,31 @@ function iniciarSelectorTerritorial() {
     }
   }
 
-  // Establecer valor inicial (Guayas / Guayaquil Centro)
-  selectProvincia.value = 'guayas';
-  actualizarCiudades('guayas', 'gye_centro');
+  // Restaurar provincia y ciudad guardada o usar valores por defecto
+  const provGuardada = Memoria.obtener('enfoque_provincia_guardada', 'guayas');
+  const ciudadGuardada = Memoria.obtener('enfoque_ciudad_guardada', 'gye_centro');
+  const esNacionalActivo = Memoria.obtener('enfoque_es_nacional', 'true') === 'true';
+
+  if (DIVISION_TERRITORIAL.provincias[provGuardada]) {
+    selectProvincia.value = provGuardada;
+    actualizarCiudades(provGuardada, ciudadGuardada);
+  } else {
+    selectProvincia.value = 'guayas';
+    actualizarCiudades('guayas', 'gye_centro');
+  }
+
+  if (btnNacional) {
+    btnNacional.classList.toggle('active', esNacionalActivo);
+  }
 
   // Evento: Cambio de provincia
   selectProvincia.addEventListener('change', () => {
     const claveProv = selectProvincia.value;
     actualizarCiudades(claveProv);
+
+    Memoria.guardar('enfoque_provincia_guardada', claveProv);
+    Memoria.guardar('enfoque_ciudad_guardada', selectCiudad.value);
+    Memoria.guardar('enfoque_es_nacional', 'false');
 
     const prov = DIVISION_TERRITORIAL.provincias[claveProv];
     if (prov) {
@@ -899,6 +1054,10 @@ function iniciarSelectorTerritorial() {
     if (!prov) return;
 
     const ciudadId = selectCiudad.value;
+    Memoria.guardar('enfoque_provincia_guardada', claveProv);
+    Memoria.guardar('enfoque_ciudad_guardada', ciudadId);
+    Memoria.guardar('enfoque_es_nacional', 'false');
+
     const ciudadObj = prov.ciudades.find(c => c.id === ciudadId);
     if (ciudadObj) {
       mapa.flyTo(ciudadObj.centro, ciudadObj.zoom, { duration: 1.0 });
@@ -918,6 +1077,7 @@ function iniciarSelectorTerritorial() {
     btnNacional.addEventListener('click', () => {
       btnNacional.classList.add('active');
       pillsRapidos.forEach(p => p.classList.remove('active'));
+      Memoria.guardar('enfoque_es_nacional', 'true');
       mapa.flyTo(DIVISION_TERRITORIAL.pais.centro, DIVISION_TERRITORIAL.pais.zoom, { duration: 1.0 });
 
       if (window.innerWidth <= 768) {
@@ -934,6 +1094,10 @@ function iniciarSelectorTerritorial() {
       if (DIVISION_TERRITORIAL.provincias[claveProv]) {
         selectProvincia.value = claveProv;
         actualizarCiudades(claveProv, ciudadId);
+
+        Memoria.guardar('enfoque_provincia_guardada', claveProv);
+        Memoria.guardar('enfoque_ciudad_guardada', ciudadId);
+        Memoria.guardar('enfoque_es_nacional', 'false');
 
         const prov = DIVISION_TERRITORIAL.provincias[claveProv];
         const ciudadObj = prov.ciudades.find(c => c.id === ciudadId);
@@ -1185,6 +1349,11 @@ function solicitarUbicacionUsuario(centrarAlEncontrar = false) {
       const lon = posicion.coords.longitude;
       const precision = posicion.coords.accuracy;
       coordenadasUsuarioActual = { lat, lon };
+
+      // Guardar ubicación en memoria para no requerir permisos nuevamente
+      Memoria.guardar('usuario_lat_guardada', lat.toString());
+      Memoria.guardar('usuario_lon_guardada', lon.toString());
+      Memoria.guardar('usuario_precision_guardada', precision.toString());
 
       if (marcadorUsuario) {
         mapa.removeLayer(marcadorUsuario);
