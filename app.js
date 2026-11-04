@@ -9,24 +9,26 @@ const DIVISION_TERRITORIAL = {
   },
   provincias: {
     represas: {
-      nombre: '⚡ Represas e Hidroeléctricas Nacionales',
+      nombre: '⚡ Represas e Infraestructura Hídrica',
       centro: [-1.8, -78.5],
       zoom: 8,
       ciudades: [
-        { id: 'coca_codo', nombre: '⚡ Coca Codo Sinclair (Captación/Presa - 1500 MW)', centro: [-0.1979, -77.6850], zoom: 12 },
-        { id: 'complejo_paute', nombre: '⚡ Complejo Paute Integral (Mazar, Molino, Sopladora)', centro: [-2.5940, -78.5800], zoom: 11 },
-        { id: 'mazar', nombre: '💧 Embalse y Presa Mazar (Río Paute - 170 MW)', centro: [-2.5933, -78.6160], zoom: 13 },
-        { id: 'paute_molino', nombre: '⚡ Paute Molino (Presa Daniel Palacios - 1100 MW)', centro: [-2.5943, -78.5667], zoom: 13 },
-        { id: 'sopladora', nombre: '⚡ Sopladora (Central Hidroeléctrica - 487 MW)', centro: [-2.6050, -78.5080], zoom: 13 },
-        { id: 'daule_peripa', nombre: '💧 Represa Daule-Peripa (Embalse Marcel Laniado - 213 MW)', centro: [-0.9255, -79.7538], zoom: 11 },
-        { id: 'agoyan', nombre: '⚡ Agoyán (Presa y Central / Río Pastaza - 156 MW)', centro: [-1.3985, -78.3776], zoom: 13 },
-        { id: 'san_francisco_pastaza', nombre: '⚡ San Francisco (Central Hidroeléctrica - 212 MW)', centro: [-1.4020, -78.3180], zoom: 13 },
-        { id: 'minas_san_francisco', nombre: '⚡ Minas San Francisco (Presa Río Jubones - 275 MW)', centro: [-3.3099, -79.5989], zoom: 13 },
-        { id: 'toachi_pilaton', nombre: '⚡ Toachi Pilatón (Presas Alluriquín/Sarapullo - 254 MW)', centro: [-0.3150, -78.9800], zoom: 13 },
-        { id: 'delsitanisagua', nombre: '⚡ Delsitanisagua (Presa Río Zamora - 180 MW)', centro: [-4.0452, -78.9842], zoom: 13 },
-        { id: 'manduriacu', nombre: '⚡ Manduriacu (Presa Río Guayllabamba - 65 MW)', centro: [0.2146, -78.9123], zoom: 13 },
-        { id: 'cajas_lagunas', nombre: '💧 Lagunas de El Cajas (Cuenca Hídrica Austral)', centro: [-2.7833, -79.2333], zoom: 12 },
-        { id: 'quilotoa', nombre: '💧 Laguna de Quilotoa (Cráter Volcánico)', centro: [-0.8569, -78.8986], zoom: 13 }
+        { id: 'daule_peripa', nombre: '💧 Represa Daule-Peripa (Cuerpo de Presa Marcel Laniado)', centro: [-0.9230, -79.7495], zoom: 15 },
+        { id: 'coca_codo', nombre: '⚡ Coca Codo Sinclair (Presa y Desarenadores Río Coca)', centro: [-0.1980, -77.6852], zoom: 15 },
+        { id: 'mazar', nombre: '💧 Presa Mazar (Cuerpo de Presa y Vertedero Río Paute)', centro: [-2.5938, -78.6210], zoom: 15 },
+        { id: 'paute_molino', nombre: '⚡ Paute Molino (Presa Daniel Palacios / Amaluza)', centro: [-2.5943, -78.5667], zoom: 15 },
+        { id: 'sopladora', nombre: '⚡ Sopladora (Casa de Máquinas y Descarga Río Paute)', centro: [-2.6055, -78.5085], zoom: 15 },
+        { id: 'agoyan', nombre: '⚡ Presa Agoyán (Vertedero y Casa de Máquinas Pastaza)', centro: [-1.3985, -78.3776], zoom: 15 },
+        { id: 'san_francisco_pastaza', nombre: '⚡ Central San Francisco (Cañón del Pastaza)', centro: [-1.4020, -78.3180], zoom: 15 },
+        { id: 'minas_san_francisco', nombre: '⚡ Presa Minas San Francisco (Río Jubones)', centro: [-3.3099, -79.5989], zoom: 15 },
+        { id: 'toachi_pilaton', nombre: '⚡ Presa Toachi Pilatón (Captación Sarapullo / Alluriquín)', centro: [-0.3150, -78.9800], zoom: 15 },
+        { id: 'delsitanisagua', nombre: '⚡ Presa Delsitanisagua (Presa de Concreto Río Zamora)', centro: [-4.0452, -78.9842], zoom: 15 },
+        { id: 'manduriacu', nombre: '⚡ Presa Manduriacu (Cuerpo de Presa Río Guayllabamba)', centro: [0.2146, -78.9123], zoom: 15 },
+        { id: 'poza_honda', nombre: '💧 Represa Poza Honda (Presa y Embalse Santa Ana / Manabí)', centro: [-1.1444, -80.2036], zoom: 15 },
+        { id: 'la_esperanza', nombre: '💧 Represa La Esperanza (Presa y Embalse Calceta / Manabí)', centro: [-0.8030, -80.0880], zoom: 15 },
+        { id: 'chone_rio_grande', nombre: '💧 Represa Río Grande (Presa Chone / Manabí)', centro: [-0.7225, -80.0150], zoom: 15 },
+        { id: 'cajas_lagunas', nombre: '💧 Laguna La Toreadora (Parque Nacional El Cajas)', centro: [-2.7806, -79.2222], zoom: 15 },
+        { id: 'quilotoa', nombre: '💧 Laguna de Quilotoa (Cráter Volcánico Natural)', centro: [-0.8569, -78.8986], zoom: 14 }
       ]
     },
     guayas: {
@@ -55,7 +57,7 @@ const DIVISION_TERRITORIAL = {
         { id: 'el_empalme', nombre: 'El Empalme', centro: [-1.0436, -79.6358], zoom: 12 },
         { id: 'balzar', nombre: 'Balzar', centro: [-1.3653, -79.9056], zoom: 12 },
         { id: 'pedro_carbo', nombre: 'Pedro Carbo', centro: [-1.8156, -80.2336], zoom: 12 },
-        { id: 'daule_peripa', nombre: '💧 Represa Daule-Peripa (Embalse Marcel Laniado)', centro: [-0.9255, -79.7538], zoom: 11 },
+        { id: 'daule_peripa', nombre: '💧 Represa Daule-Peripa (Presa Marcel Laniado)', centro: [-0.9230, -79.7495], zoom: 15 },
         { id: 'toda_guayas', nombre: '── Toda la Provincia del Guayas ──', centro: [-2.0, -79.9], zoom: 9 }
       ]
     },
@@ -1009,11 +1011,10 @@ function iniciarSelectorTerritorial() {
   const selectProvincia = document.getElementById('select-provincia');
   const selectCiudad = document.getElementById('select-ciudad');
   const btnNacional = document.getElementById('btn-focus-national');
-  const pillsRapidos = document.querySelectorAll('.t-pill[data-quick]');
 
   if (!selectProvincia || !selectCiudad) return;
 
-  // Poblar combo de provincias
+  // Poblar combo de provincias / categorías
   selectProvincia.innerHTML = '';
   Object.keys(DIVISION_TERRITORIAL.provincias).forEach(claveProv => {
     const prov = DIVISION_TERRITORIAL.provincias[claveProv];
@@ -1042,7 +1043,7 @@ function iniciarSelectorTerritorial() {
 
   // Restaurar provincia y ciudad guardada o usar valores por defecto
   const provGuardada = Memoria.obtener('enfoque_provincia_guardada', 'guayas');
-  const ciudadGuardada = Memoria.obtener('enfoque_ciudad_guardada', 'gye_centro');
+  const ciudadGuardada = Memoria.obtener('enfoque_ciudad_guardada', 'gran_guayaquil');
   const esNacionalActivo = Memoria.obtener('enfoque_es_nacional', 'true') === 'true';
 
   if (DIVISION_TERRITORIAL.provincias[provGuardada]) {
@@ -1050,7 +1051,7 @@ function iniciarSelectorTerritorial() {
     actualizarCiudades(provGuardada, ciudadGuardada);
   } else {
     selectProvincia.value = 'guayas';
-    actualizarCiudades('guayas', 'gye_centro');
+    actualizarCiudades('guayas', 'gran_guayaquil');
   }
 
   if (btnNacional) {
@@ -1072,10 +1073,9 @@ function iniciarSelectorTerritorial() {
     }
 
     if (btnNacional) btnNacional.classList.remove('active');
-    pillsRapidos.forEach(p => p.classList.remove('active'));
   });
 
-  // Evento: Cambio de ciudad / sector
+  // Evento: Cambio de ciudad / sector / represa
   selectCiudad.addEventListener('change', () => {
     const claveProv = selectProvincia.value;
     const prov = DIVISION_TERRITORIAL.provincias[claveProv];
@@ -1092,7 +1092,6 @@ function iniciarSelectorTerritorial() {
     }
 
     if (btnNacional) btnNacional.classList.remove('active');
-    pillsRapidos.forEach(p => p.classList.remove('active'));
 
     // En móviles/tablets, cerrar la consola automáticamente para apreciar el vuelo al sector
     if (window.innerWidth <= 768) {
@@ -1104,7 +1103,6 @@ function iniciarSelectorTerritorial() {
   if (btnNacional) {
     btnNacional.addEventListener('click', () => {
       btnNacional.classList.add('active');
-      pillsRapidos.forEach(p => p.classList.remove('active'));
       Memoria.guardar('enfoque_es_nacional', 'true');
       mapa.flyTo(DIVISION_TERRITORIAL.pais.centro, DIVISION_TERRITORIAL.pais.zoom, { duration: 1.0 });
 
@@ -1113,36 +1111,6 @@ function iniciarSelectorTerritorial() {
       }
     });
   }
-
-  // Evento: Accesos rápidos directos (Pills)
-  pillsRapidos.forEach(pill => {
-    pill.addEventListener('click', () => {
-      const valor = pill.getAttribute('data-quick') || '';
-      const [claveProv, ciudadId] = valor.split(':');
-      if (DIVISION_TERRITORIAL.provincias[claveProv]) {
-        selectProvincia.value = claveProv;
-        actualizarCiudades(claveProv, ciudadId);
-
-        Memoria.guardar('enfoque_provincia_guardada', claveProv);
-        Memoria.guardar('enfoque_ciudad_guardada', ciudadId);
-        Memoria.guardar('enfoque_es_nacional', 'false');
-
-        const prov = DIVISION_TERRITORIAL.provincias[claveProv];
-        const ciudadObj = prov.ciudades.find(c => c.id === ciudadId);
-        if (ciudadObj) {
-          mapa.flyTo(ciudadObj.centro, ciudadObj.zoom, { duration: 1.0 });
-        }
-
-        if (btnNacional) btnNacional.classList.remove('active');
-        pillsRapidos.forEach(p => p.classList.remove('active'));
-        pill.classList.add('active');
-
-        if (window.innerWidth <= 768) {
-          alternarConsolaOpciones(false);
-        }
-      }
-    });
-  });
 }
 
 function alternarConsolaOpciones(forzarEstado = null) {

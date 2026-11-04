@@ -596,60 +596,7 @@ html, body {
   font-size: 0.72rem;
 }
 
-.territory-shortcuts {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 4px;
-  margin-top: 1px;
-}
-
-.t-pill {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid var(--panel-border);
-  color: var(--text-secondary);
-  font-family: var(--font-primary);
-  font-size: 0.65rem;
-  font-weight: 500;
-  padding: 5px 2px;
-  border-radius: 4px;
-  cursor: pointer;
-  text-align: center;
-  transition: all 0.15s ease;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.t-pill:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: #ffffff;
-}
-
-.t-pill.active {
-  background: rgba(6, 182, 212, 0.15);
-  border-color: var(--accent-cyan);
-  color: var(--accent-cyan);
-  font-weight: 600;
-}
-
-.t-pill.pill-hydro {
-  background: rgba(245, 158, 11, 0.06);
-  border-color: rgba(245, 158, 11, 0.28);
-  color: #fbbf24;
-}
-
-.t-pill.pill-hydro:hover {
-  background: rgba(245, 158, 11, 0.15);
-  border-color: #fbbf24;
-  color: #ffffff;
-}
-
-.t-pill.pill-hydro.active {
-  background: rgba(245, 158, 11, 0.22);
-  border-color: #f59e0b;
-  color: #fef08a;
-  box-shadow: 0 0 8px rgba(245, 158, 11, 0.35);
-}
+/* Territory shortcuts bar removed for clean focused layout */
 
 /* ==========================================================================
    FLOATING THERMAL LEGEND
@@ -1016,10 +963,6 @@ html, body {
 }
 
 @media (max-width: 380px) {
-  .territory-shortcuts {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
   .app-header {
     padding: 4px 6px;
     gap: 4px;
