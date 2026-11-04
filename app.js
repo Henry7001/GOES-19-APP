@@ -8,6 +8,27 @@ const DIVISION_TERRITORIAL = {
     zoom: 6
   },
   provincias: {
+    represas: {
+      nombre: '⚡ Represas e Hidroeléctricas Nacionales',
+      centro: [-1.8, -78.5],
+      zoom: 8,
+      ciudades: [
+        { id: 'coca_codo', nombre: '⚡ Coca Codo Sinclair (Captación/Presa - 1500 MW)', centro: [-0.1979, -77.6850], zoom: 12 },
+        { id: 'complejo_paute', nombre: '⚡ Complejo Paute Integral (Mazar, Molino, Sopladora)', centro: [-2.5940, -78.5800], zoom: 11 },
+        { id: 'mazar', nombre: '💧 Embalse y Presa Mazar (Río Paute - 170 MW)', centro: [-2.5933, -78.6160], zoom: 13 },
+        { id: 'paute_molino', nombre: '⚡ Paute Molino (Presa Daniel Palacios - 1100 MW)', centro: [-2.5943, -78.5667], zoom: 13 },
+        { id: 'sopladora', nombre: '⚡ Sopladora (Central Hidroeléctrica - 487 MW)', centro: [-2.6050, -78.5080], zoom: 13 },
+        { id: 'daule_peripa', nombre: '💧 Represa Daule-Peripa (Embalse Marcel Laniado - 213 MW)', centro: [-0.9255, -79.7538], zoom: 11 },
+        { id: 'agoyan', nombre: '⚡ Agoyán (Presa y Central / Río Pastaza - 156 MW)', centro: [-1.3985, -78.3776], zoom: 13 },
+        { id: 'san_francisco_pastaza', nombre: '⚡ San Francisco (Central Hidroeléctrica - 212 MW)', centro: [-1.4020, -78.3180], zoom: 13 },
+        { id: 'minas_san_francisco', nombre: '⚡ Minas San Francisco (Presa Río Jubones - 275 MW)', centro: [-3.3099, -79.5989], zoom: 13 },
+        { id: 'toachi_pilaton', nombre: '⚡ Toachi Pilatón (Presas Alluriquín/Sarapullo - 254 MW)', centro: [-0.3150, -78.9800], zoom: 13 },
+        { id: 'delsitanisagua', nombre: '⚡ Delsitanisagua (Presa Río Zamora - 180 MW)', centro: [-4.0452, -78.9842], zoom: 13 },
+        { id: 'manduriacu', nombre: '⚡ Manduriacu (Presa Río Guayllabamba - 65 MW)', centro: [0.2146, -78.9123], zoom: 13 },
+        { id: 'cajas_lagunas', nombre: '💧 Lagunas de El Cajas (Cuenca Hídrica Austral)', centro: [-2.7833, -79.2333], zoom: 12 },
+        { id: 'quilotoa', nombre: '💧 Laguna de Quilotoa (Cráter Volcánico)', centro: [-0.8569, -78.8986], zoom: 13 }
+      ]
+    },
     guayas: {
       nombre: 'Guayas',
       centro: [-2.0, -79.9],
@@ -34,6 +55,7 @@ const DIVISION_TERRITORIAL = {
         { id: 'el_empalme', nombre: 'El Empalme', centro: [-1.0436, -79.6358], zoom: 12 },
         { id: 'balzar', nombre: 'Balzar', centro: [-1.3653, -79.9056], zoom: 12 },
         { id: 'pedro_carbo', nombre: 'Pedro Carbo', centro: [-1.8156, -80.2336], zoom: 12 },
+        { id: 'daule_peripa', nombre: '💧 Represa Daule-Peripa (Embalse Marcel Laniado)', centro: [-0.9255, -79.7538], zoom: 11 },
         { id: 'toda_guayas', nombre: '── Toda la Provincia del Guayas ──', centro: [-2.0, -79.9], zoom: 9 }
       ]
     },
@@ -66,6 +88,7 @@ const DIVISION_TERRITORIAL = {
         { id: 'paute', nombre: 'Paute', centro: [-2.7778, -78.7597], zoom: 13 },
         { id: 'santa_isabel', nombre: 'Santa Isabel (Yunguilla)', centro: [-3.2750, -79.3150], zoom: 12 },
         { id: 'giron', nombre: 'Girón', centro: [-3.1611, -79.1464], zoom: 12 },
+        { id: 'complejo_paute', nombre: '⚡ Complejo Paute (Mazar - Molino - Sopladora)', centro: [-2.5940, -78.5800], zoom: 11 },
         { id: 'toda_azuay', nombre: '── Toda la Provincia del Azuay ──', centro: [-2.95, -79.05], zoom: 9 }
       ]
     },

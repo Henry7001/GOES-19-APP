@@ -632,6 +632,25 @@ html, body {
   font-weight: 600;
 }
 
+.t-pill.pill-hydro {
+  background: rgba(245, 158, 11, 0.06);
+  border-color: rgba(245, 158, 11, 0.28);
+  color: #fbbf24;
+}
+
+.t-pill.pill-hydro:hover {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: #fbbf24;
+  color: #ffffff;
+}
+
+.t-pill.pill-hydro.active {
+  background: rgba(245, 158, 11, 0.22);
+  border-color: #f59e0b;
+  color: #fef08a;
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.35);
+}
+
 /* ==========================================================================
    FLOATING THERMAL LEGEND
    ========================================================================== */
