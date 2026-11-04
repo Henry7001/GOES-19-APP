@@ -155,6 +155,31 @@ html, body {
   color: var(--accent-cyan);
 }
 
+.cadence-item {
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.cadence-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.cadence-item:hover .t-label {
+  color: var(--accent-cyan);
+}
+
+.tool-btn.rotating svg {
+  animation: spin-refresh 0.8s linear infinite;
+}
+
+@keyframes spin-refresh {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 .header-actions {
   display: flex;
   align-items: center;
@@ -181,12 +206,14 @@ html, body {
   color: var(--accent-cyan);
 }
 
-.mobile-menu-btn {
-  display: none;
+.tool-btn.active {
+  background: rgba(6, 182, 212, 0.16);
+  border-color: var(--accent-cyan);
+  color: var(--accent-cyan);
 }
 
 /* ==========================================================================
-   SIDEBAR / DRAWER
+   SIDEBAR / DRAWER (Consola Meteorológica)
    ========================================================================== */
 .control-drawer {
   position: absolute;
@@ -203,7 +230,13 @@ html, body {
   display: flex;
   flex-direction: column;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;
+}
+
+.control-drawer.closed {
+  transform: translateX(calc(100% + 24px));
+  opacity: 0;
+  pointer-events: none;
 }
 
 .drawer-header {
@@ -223,12 +256,24 @@ html, body {
 }
 
 .drawer-close-btn {
-  display: none;
-  background: transparent;
-  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--panel-border);
+  border-radius: 4px;
   color: var(--text-secondary);
-  font-size: 16px;
+  font-size: 13px;
   cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.drawer-close-btn:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #ef4444;
 }
 
 .drawer-scroll {
@@ -417,6 +462,10 @@ html, body {
   gap: 2px;
 }
 
+.segmented-control.cadence-control {
+  grid-template-columns: repeat(3, 1fr);
+}
+
 .seg-btn {
   background: transparent;
   border: none;
@@ -591,53 +640,109 @@ html, body {
 @media (max-width: 650px) {
   .app-header {
     height: auto;
-    min-height: 44px;
-    padding: 6px 10px;
-    top: 8px;
-    left: 8px;
-    right: 8px;
-    gap: 8px;
+    min-height: 40px;
+    padding: 5px 8px;
+    top: 6px;
+    left: 6px;
+    right: 6px;
+    width: auto;
+    gap: 6px;
+    box-sizing: border-box;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .brand-cluster {
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .live-dot {
+    width: 7px;
+    height: 7px;
+    flex-shrink: 0;
   }
 
   .brand-titles {
     min-width: 0;
+    flex-shrink: 0;
   }
 
   .brand-code {
-    font-size: 0.78rem;
+    font-size: 0.76rem;
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    letter-spacing: 0.4px;
   }
 
-  .brand-region {
-    display: none;
+  .brand-region,
+  .hide-on-mobile,
+  .hide-on-mobile-inline {
+    display: none !important;
   }
 
   .telemetry-bar {
-    gap: 10px;
+    gap: 6px;
+    flex-shrink: 1;
+    min-width: 0;
+    justify-content: center;
   }
 
   .telemetry-item {
     align-items: center;
+    text-align: center;
+    flex-shrink: 1;
+    min-width: 0;
+  }
+
+  .cadence-item {
+    padding: 1px 3px;
   }
 
   .t-label {
-    font-size: 0.5rem;
+    font-size: 0.48rem;
+    letter-spacing: 0.2px;
+    white-space: nowrap;
+    line-height: 1;
+    margin-bottom: 2px;
   }
 
   .t-value {
-    font-size: 0.72rem;
+    font-size: 0.7rem;
+    white-space: nowrap;
+    line-height: 1.1;
   }
 
-  .hide-on-mobile {
-    display: none;
+  .header-actions {
+    gap: 4px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+  }
+
+  .tool-btn {
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+    padding: 0;
+  }
+
+  .tool-btn svg {
+    width: 14px;
+    height: 14px;
   }
 
   .mobile-menu-btn {
     display: flex;
-    width: 34px;
-    height: 34px;
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+    padding: 0;
+  }
+
+  .mobile-menu-btn svg {
+    width: 15px;
+    height: 15px;
   }
 
   .drawer-close-btn {
@@ -650,11 +755,12 @@ html, body {
     bottom: 0;
     left: 0;
     right: 0;
-    width: 100vw;
-    max-height: 65vh;
-    border-radius: 14px 14px 0 0;
+    width: 100%;
+    max-height: 75vh;
+    border-radius: 16px 16px 0 0;
     transform: translateY(100%);
     box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.6);
+    -webkit-overflow-scrolling: touch;
   }
 
   .control-drawer.open {
@@ -664,17 +770,22 @@ html, body {
   .floating-legend {
     bottom: 12px;
     left: 8px;
-    right: 64px; /* Give room for the bottom-right zoom buttons */
+    right: 56px; /* Give room for the bottom-right zoom buttons */
     width: auto;
-    padding: 8px 10px;
+    padding: 6px 8px;
   }
 
   .fl-title {
-    font-size: 0.68rem;
+    font-size: 0.65rem;
   }
 
   .fl-crit {
-    font-size: 0.6rem;
+    font-size: 0.58rem;
+  }
+
+  .fl-labels {
+    font-size: 0.55rem;
+    gap: 2px;
   }
 
   .leaflet-control-zoom {
@@ -682,9 +793,55 @@ html, body {
     margin-right: 8px !important;
   }
 
+  .leaflet-control-zoom a {
+    width: 32px !important;
+    height: 32px !important;
+    line-height: 32px !important;
+    font-size: 16px !important;
+  }
+
   .sync-banner {
     bottom: 75px;
     left: 8px;
+  }
+}
+
+@media (max-width: 380px) {
+  .app-header {
+    padding: 4px 6px;
+    gap: 4px;
+  }
+
+  .brand-code {
+    font-size: 0.72rem;
+  }
+
+  .telemetry-bar {
+    gap: 3px;
+  }
+
+  .t-label {
+    font-size: 0.44rem;
+  }
+
+  .t-value {
+    font-size: 0.65rem;
+  }
+
+  .header-actions {
+    gap: 3px;
+  }
+
+  .tool-btn,
+  .mobile-menu-btn {
+    width: 26px;
+    height: 26px;
+  }
+
+  .tool-btn svg,
+  .mobile-menu-btn svg {
+    width: 13px;
+    height: 13px;
   }
 }
 

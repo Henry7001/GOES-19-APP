@@ -22,14 +22,14 @@
       <div class="brand-cluster">
         <span class="live-dot" title="Transmisión Activa"></span>
         <div class="brand-titles">
-          <span class="brand-code">GOES-19 // ABI-L2</span>
+          <span class="brand-code">GOES-19<span class="hide-on-mobile-inline"> // ABI-L2</span></span>
           <span class="brand-region">ECUADOR &bull; GALÁPAGOS <b style="color:var(--accent-cyan); font-weight:500;">| Por Henry Ruiz</b></span>
         </div>
       </div>
 
       <div class="telemetry-bar">
         <div class="telemetry-item">
-          <span class="t-label">CORTE SATÉLITE</span>
+          <span class="t-label"><span class="hide-on-mobile-inline">CORTE </span>SATÉLITE</span>
           <span class="t-value mono" id="header-timestamp">--:-- UTC</span>
         </div>
         <div class="telemetry-item hide-on-mobile">
@@ -37,11 +37,11 @@
           <span class="t-value mono" id="header-local-time">--:-- EC</span>
         </div>
         <div class="telemetry-item">
-          <span class="t-label">RAYOS EC</span>
+          <span class="t-label">RAYOS<span class="hide-on-mobile-inline"> EC</span></span>
           <span class="t-value mono text-amber" id="header-lightning-count">0</span>
         </div>
-        <div class="telemetry-item">
-          <span class="t-label">CADENCIA</span>
+        <div class="telemetry-item cadence-item" id="telemetry-cadence" title="Clic para alternar cadencia (10m, 5m, 2m) o forzar recarga">
+          <span class="t-label">CADENCIA ▾</span>
           <span class="t-value mono text-accent" id="header-countdown">10:00</span>
         </div>
       </div>
@@ -62,11 +62,17 @@
             <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-1.19"/>
           </svg>
         </button>
-        <button id="btn-toggle-sidebar" class="tool-btn mobile-menu-btn" aria-label="Abrir panel" title="Menu de control">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="4" y1="6" x2="20" y2="6"></line>
-            <line x1="4" y1="12" x2="20" y2="12"></line>
-            <line x1="4" y1="18" x2="20" y2="18"></line>
+        <button id="btn-toggle-sidebar" class="tool-btn active" aria-label="Consola de opciones" title="Ocultar o mostrar opciones (Esc)">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="4" y1="21" x2="4" y2="14"></line>
+            <line x1="4" y1="10" x2="4" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12" y2="3"></line>
+            <line x1="20" y1="21" x2="20" y2="16"></line>
+            <line x1="20" y1="12" x2="20" y2="3"></line>
+            <line x1="1" y1="14" x2="7" y2="14"></line>
+            <line x1="9" y1="8" x2="15" y2="8"></line>
+            <line x1="17" y1="16" x2="23" y2="16"></line>
           </svg>
         </button>
       </div>
@@ -76,7 +82,7 @@
     <aside class="control-drawer" id="control-drawer">
       <div class="drawer-header">
         <span class="drawer-title">CONSOLA METEOROLÓGICA</span>
-        <button class="drawer-close-btn" id="btn-close-sidebar" aria-label="Cerrar panel">✕</button>
+        <button class="drawer-close-btn" id="btn-close-sidebar" aria-label="Cerrar opciones" title="Ocultar opciones (Esc)">✕</button>
       </div>
 
       <div class="drawer-scroll">
@@ -195,6 +201,16 @@
               <input type="checkbox" id="toggle-cities" checked>
               <span class="toggle-switch"></span>
             </label>
+          </div>
+        </div>
+
+        <!-- Section: Cadencia Autorecarga -->
+        <div class="drawer-section">
+          <div class="section-label">INTERVALO DE AUTORECARGA</div>
+          <div class="segmented-control cadence-control" id="cadence-selector">
+            <button class="seg-btn" data-cadence="120">2 min</button>
+            <button class="seg-btn" data-cadence="300">5 min</button>
+            <button class="seg-btn active" data-cadence="600">10 min</button>
           </div>
         </div>
 

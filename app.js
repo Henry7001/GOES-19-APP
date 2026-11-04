@@ -164,10 +164,15 @@ function estaEnTerritorioEcuador(lon, lat) {
 
 let mapa;
 let capaSatelite = null;
+let capaEnCarga = null;
 let productoActual = 'G19-ABI-FD-BAND13-GRAD';
 let opacidadActual = 0.85;
+let horaActualSatelite = null;
+
+let cadenciaSegundos = parseInt(localStorage.getItem('cadencia_segundos_goes19') || '600', 10);
+let tiempoProximaRecarga = Date.now() + cadenciaSegundos * 1000;
 let temporizadorRecarga = null;
-let segundosRestantes = 600;
+let recargaEnProgreso = false;
 let temporizadorMovimiento = null;
 
 let capaCalles;
@@ -188,7 +193,7 @@ let coordenadasUsuarioActual = null;
 document.addEventListener('DOMContentLoaded', () => {
   iniciarMapa();
   vincularEventosInterfaz();
-  cargarDatosSatelitales();
+  ejecutarRecargaCompleta('inicio');
   iniciarContadorRecarga();
   iniciarDetectorRayos();
   solicitarUbicacionUsuario(false);
@@ -251,16 +256,18 @@ async function cargarDatosSatelitales() {
   mostrarEstadoCarga(true, 'Consultando pasada...');
 
   try {
-    const urlApi = `https://realearth.ssec.wisc.edu/api/latest?products=${productoActual}`;
-    const respuesta = await fetch(urlApi);
+    const timestamp = Date.now();
+    const urlApi = `https://realearth.ssec.wisc.edu/api/latest?products=${productoActual}&_nocache=${timestamp}`;
+    const respuesta = await fetch(urlApi, { cache: 'no-store' });
     const datos = await respuesta.json();
     const horaRaw = datos[productoActual];
 
     if (horaRaw) {
+      horaActualSatelite = horaRaw;
       actualizarRelojesCabecera(horaRaw);
     }
   } catch (error) {
-    console.error('No se pudo obtener la marca de tiempo:', error);
+    console.error('No se pudo obtener la marca de tiempo satelital:', error);
   } finally {
     renderizarImagenSatelital();
   }
@@ -283,12 +290,23 @@ function renderizarImagenSatelital() {
   const alto = Math.round(tamano.y * factor);
 
   const timestampCache = Date.now();
-  const urlWms = `https://realearth.ssec.wisc.edu/cgi-bin/mapserv?map=${productoActual}.map&service=WMS&version=1.3.0&request=GetMap&layers=latest&crs=EPSG:4326&bbox=${sur.toFixed(4)},${oeste.toFixed(4)},${norte.toFixed(4)},${este.toFixed(4)}&width=${ancho}&height=${alto}&format=image/png&transparent=true&_nocache=${timestampCache}`;
+  let nombreCapa = 'latest';
+  if (horaActualSatelite) {
+    nombreCapa = `${productoActual}_${horaActualSatelite.replace('.', '_')}`;
+  }
+
+  const urlWms = `https://realearth.ssec.wisc.edu/cgi-bin/mapserv?map=${productoActual}.map&service=WMS&version=1.3.0&request=GetMap&layers=${nombreCapa}&crs=EPSG:4326&bbox=${sur.toFixed(4)},${oeste.toFixed(4)},${norte.toFixed(4)},${este.toFixed(4)}&width=${ancho}&height=${alto}&format=image/png&transparent=true&_nocache=${timestampCache}`;
 
   const coordenadasOverlay = [
     [sur, oeste],
     [norte, este]
   ];
+
+  // Limpiar capa anterior en carga si aún no había terminado
+  if (capaEnCarga && mapa.hasLayer(capaEnCarga)) {
+    mapa.removeLayer(capaEnCarga);
+    capaEnCarga = null;
+  }
 
   const nuevaCapa = L.imageOverlay(urlWms, coordenadasOverlay, {
     opacity: opacidadActual,
@@ -296,16 +314,55 @@ function renderizarImagenSatelital() {
     interactive: false
   });
 
-  nuevaCapa.on('load', () => {
-    if (capaSatelite && capaSatelite !== nuevaCapa) {
-      mapa.removeLayer(capaSatelite);
+  capaEnCarga = nuevaCapa;
+
+  const timeoutId = setTimeout(() => {
+    if (capaEnCarga === nuevaCapa) {
+      mostrarEstadoCarga(false);
     }
-    capaSatelite = nuevaCapa;
-    mostrarEstadoCarga(false);
+  }, 12000);
+
+  nuevaCapa.on('load', () => {
+    clearTimeout(timeoutId);
+    if (capaEnCarga === nuevaCapa) {
+      if (capaSatelite && mapa.hasLayer(capaSatelite) && capaSatelite !== nuevaCapa) {
+        mapa.removeLayer(capaSatelite);
+      }
+      capaSatelite = nuevaCapa;
+      capaEnCarga = null;
+      mostrarEstadoCarga(false);
+    } else {
+      if (mapa.hasLayer(nuevaCapa)) mapa.removeLayer(nuevaCapa);
+    }
   });
 
   nuevaCapa.on('error', () => {
-    mostrarEstadoCarga(false);
+    clearTimeout(timeoutId);
+    if (capaEnCarga === nuevaCapa) {
+      if (nombreCapa !== 'latest') {
+        const urlFallback = `https://realearth.ssec.wisc.edu/cgi-bin/mapserv?map=${productoActual}.map&service=WMS&version=1.3.0&request=GetMap&layers=latest&crs=EPSG:4326&bbox=${sur.toFixed(4)},${oeste.toFixed(4)},${norte.toFixed(4)},${este.toFixed(4)}&width=${ancho}&height=${alto}&format=image/png&transparent=true&_nocache=${Date.now()}`;
+        const capaFallback = L.imageOverlay(urlFallback, coordenadasOverlay, {
+          opacity: opacidadActual,
+          zIndex: 200,
+          interactive: false
+        });
+        capaEnCarga = capaFallback;
+        capaFallback.on('load', () => {
+          if (capaSatelite && mapa.hasLayer(capaSatelite)) mapa.removeLayer(capaSatelite);
+          capaSatelite = capaFallback;
+          capaEnCarga = null;
+          mostrarEstadoCarga(false);
+        });
+        capaFallback.on('error', () => {
+          capaEnCarga = null;
+          mostrarEstadoCarga(false);
+        });
+        capaFallback.addTo(mapa);
+      } else {
+        capaEnCarga = null;
+        mostrarEstadoCarga(false);
+      }
+    }
   });
 
   nuevaCapa.addTo(mapa);
@@ -346,9 +403,10 @@ function vincularEventosInterfaz() {
       const inputRadio = opcion.querySelector('input[type="radio"]');
       inputRadio.checked = true;
       productoActual = inputRadio.value;
+      horaActualSatelite = null;
 
       actualizarLeyendaTermica(productoActual);
-      renderizarImagenSatelital();
+      cargarDatosSatelitales();
     });
   });
 
@@ -426,11 +484,13 @@ function vincularEventosInterfaz() {
   }
 
   document.getElementById('btn-refresh').addEventListener('click', () => {
-    segundosRestantes = 600;
-    cargarDatosSatelitales();
+    tiempoProximaRecarga = Date.now() + cadenciaSegundos * 1000;
+    actualizarVisorContador();
+    ejecutarRecargaCompleta('manual');
   });
 
-  const botonesRegion = document.querySelectorAll('.seg-btn');
+  // Configuración territorial (filtrada para no colisionar con selector de cadencia)
+  const botonesRegion = document.querySelectorAll('.seg-btn[data-region]');
   botonesRegion.forEach(boton => {
     boton.addEventListener('click', () => {
       botonesRegion.forEach(item => item.classList.remove('active'));
@@ -443,17 +503,91 @@ function vincularEventosInterfaz() {
     });
   });
 
-  const panelLateral = document.getElementById('control-drawer');
-  const botonMenuMovil = document.getElementById('btn-toggle-sidebar');
-  const botonCerrarPanel = document.getElementById('btn-close-sidebar');
+  // Configuración de cadencia de autorecarga en consola lateral
+  const botonesCadencia = document.querySelectorAll('#cadence-selector .seg-btn');
+  botonesCadencia.forEach(boton => {
+    const valorCadencia = parseInt(boton.getAttribute('data-cadence'), 10);
+    if (valorCadencia === cadenciaSegundos) {
+      botonesCadencia.forEach(b => b.classList.remove('active'));
+      boton.classList.add('active');
+    }
 
-  botonMenuMovil.addEventListener('click', () => {
-    panelLateral.classList.toggle('open');
+    boton.addEventListener('click', () => {
+      cambiarCadencia(valorCadencia);
+    });
   });
 
-  botonCerrarPanel.addEventListener('click', () => {
-    panelLateral.classList.remove('open');
+  // Clic directo en el contador de cadencia de la cabecera (ciclo rápido: 10m -> 5m -> 2m -> 10m)
+  const itemCadenciaCabecera = document.getElementById('telemetry-cadence');
+  if (itemCadenciaCabecera) {
+    itemCadenciaCabecera.addEventListener('click', () => {
+      const opciones = [600, 300, 120];
+      const indiceActual = opciones.indexOf(cadenciaSegundos);
+      const siguienteCadencia = opciones[(indiceActual + 1) % opciones.length];
+      cambiarCadencia(siguienteCadencia);
+    });
+  }
+
+  const botonToggleOpciones = document.getElementById('btn-toggle-sidebar');
+  const botonCerrarOpciones = document.getElementById('btn-close-sidebar');
+
+  if (botonToggleOpciones) {
+    botonToggleOpciones.addEventListener('click', (e) => {
+      e.stopPropagation();
+      alternarConsolaOpciones();
+    });
+  }
+
+  if (botonCerrarOpciones) {
+    botonCerrarOpciones.addEventListener('click', () => {
+      alternarConsolaOpciones(false);
+    });
+  }
+
+  // Atajo de teclado: Escape para ocultar/mostrar opciones
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      alternarConsolaOpciones(false);
+    }
   });
+
+  // Restaurar estado en escritorio si el usuario lo dejó previamente cerrado
+  if (window.innerWidth > 650 && localStorage.getItem('panel_opciones_visible') === 'false') {
+    alternarConsolaOpciones(false);
+  }
+}
+
+function alternarConsolaOpciones(forzarEstado = null) {
+  const panel = document.getElementById('control-drawer');
+  const botonToggle = document.getElementById('btn-toggle-sidebar');
+  if (!panel) return;
+
+  const esMovil = window.innerWidth <= 650;
+
+  if (esMovil) {
+    const debeAbrir = forzarEstado !== null ? forzarEstado : !panel.classList.contains('open');
+    if (debeAbrir) {
+      panel.classList.add('open');
+      panel.classList.remove('closed');
+      if (botonToggle) botonToggle.classList.add('active');
+    } else {
+      panel.classList.remove('open');
+      if (botonToggle) botonToggle.classList.remove('active');
+    }
+  } else {
+    // En escritorio: por defecto está abierto. La clase 'closed' lo oculta hacia la derecha.
+    const estaCerrado = panel.classList.contains('closed');
+    const debeAbrir = forzarEstado !== null ? forzarEstado : estaCerrado;
+    if (debeAbrir) {
+      panel.classList.remove('closed');
+      if (botonToggle) botonToggle.classList.add('active');
+      localStorage.setItem('panel_opciones_visible', 'true');
+    } else {
+      panel.classList.add('closed');
+      if (botonToggle) botonToggle.classList.remove('active');
+      localStorage.setItem('panel_opciones_visible', 'false');
+    }
+  }
 }
 
 function actualizarLeyendaTermica(producto) {
@@ -499,26 +633,98 @@ function actualizarLeyendaTermica(producto) {
 }
 
 function iniciarContadorRecarga() {
-  const visorContador = document.getElementById('header-countdown');
-
   if (temporizadorRecarga) {
     clearInterval(temporizadorRecarga);
   }
 
+  actualizarVisorContador();
+
   temporizadorRecarga = setInterval(() => {
-    segundosRestantes--;
-
-    if (segundosRestantes <= 0) {
-      segundosRestantes = 600;
-      cargarDatosSatelitales();
-    }
-
-    const min = Math.floor(segundosRestantes / 60);
-    const seg = segundosRestantes % 60;
-    if (visorContador) {
-      visorContador.innerText = `${min.toString().padStart(2, '0')}:${seg.toString().padStart(2, '0')}`;
-    }
+    tickContadorRecarga();
   }, 1000);
+}
+
+function tickContadorRecarga() {
+  const ahora = Date.now();
+  const milisegundosRestantes = tiempoProximaRecarga - ahora;
+  const segundos = Math.max(0, Math.ceil(milisegundosRestantes / 1000));
+
+  actualizarVisorContador(segundos);
+
+  if (segundos <= 0 && !recargaEnProgreso) {
+    tiempoProximaRecarga = ahora + cadenciaSegundos * 1000;
+    ejecutarRecargaCompleta('auto');
+  }
+}
+
+function actualizarVisorContador(segundos = null) {
+  if (segundos === null) {
+    const milisegundosRestantes = tiempoProximaRecarga - Date.now();
+    segundos = Math.max(0, Math.ceil(milisegundosRestantes / 1000));
+  }
+  const visorContador = document.getElementById('header-countdown');
+  if (visorContador) {
+    const min = Math.floor(segundos / 60);
+    const seg = segundos % 60;
+    visorContador.innerText = `${min.toString().padStart(2, '0')}:${seg.toString().padStart(2, '0')}`;
+  }
+}
+
+function cambiarCadencia(nuevosSegundos) {
+  cadenciaSegundos = nuevosSegundos;
+  localStorage.setItem('cadencia_segundos_goes19', nuevosSegundos.toString());
+  tiempoProximaRecarga = Date.now() + cadenciaSegundos * 1000;
+  actualizarVisorContador();
+
+  const botonesCadencia = document.querySelectorAll('#cadence-selector .seg-btn');
+  botonesCadencia.forEach(b => {
+    if (parseInt(b.getAttribute('data-cadence'), 10) === cadenciaSegundos) {
+      b.classList.add('active');
+    } else {
+      b.classList.remove('active');
+    }
+  });
+}
+
+// Reactivación inmediata cuando la pestaña vuelve a estar visible o se desbloquea el dispositivo
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    const ahora = Date.now();
+    if (ahora >= tiempoProximaRecarga) {
+      tiempoProximaRecarga = ahora + cadenciaSegundos * 1000;
+      ejecutarRecargaCompleta('visibilidad');
+    } else {
+      actualizarVisorContador();
+    }
+  }
+});
+
+async function ejecutarRecargaCompleta(origen = 'auto') {
+  if (recargaEnProgreso) return;
+  recargaEnProgreso = true;
+
+  const botonRefresh = document.getElementById('btn-refresh');
+  if (botonRefresh) botonRefresh.classList.add('rotating');
+
+  mostrarEstadoCarga(true, origen === 'manual' ? 'Recarga forzada en curso...' : 'Sincronizando satélite y rayos...');
+
+  try {
+    // 1. Recargar datos satelitales (con timestamp dinámico)
+    await cargarDatosSatelitales();
+
+    // 2. Recargar detector de rayos (GLM)
+    if (detectorRayosActivo) {
+      await actualizarDetectorRayos();
+    }
+  } catch (error) {
+    console.error('Error durante la recarga completa:', error);
+  } finally {
+    recargaEnProgreso = false;
+    mostrarEstadoCarga(false);
+    if (botonRefresh) {
+      setTimeout(() => botonRefresh.classList.remove('rotating'), 600);
+    }
+  }
 }
 
 function mostrarEstadoCarga(cargando, mensaje = 'Sincronizando...') {
@@ -651,7 +857,7 @@ async function actualizarDetectorRayos() {
     // 1. Obtener la última marca de tiempo disponible para el producto de rayos
     let paramTiempo = '';
     try {
-      const respLatest = await fetch(`https://realearth.ssec.wisc.edu/api/latest?products=glmgrouppoints&_nocache=${timestamp}`);
+      const respLatest = await fetch(`https://realearth.ssec.wisc.edu/api/latest?products=glmgrouppoints&_nocache=${timestamp}`, { cache: 'no-store' });
       const datosLatest = await respLatest.json();
       if (datosLatest && datosLatest.glmgrouppoints) {
         paramTiempo = `&time=${datosLatest.glmgrouppoints}`;
@@ -660,7 +866,7 @@ async function actualizarDetectorRayos() {
       // Usar última pasada por defecto si falla
     }
 
-    const respuesta = await fetch(`https://realearth.ssec.wisc.edu/api/shapes?products=glmgrouppoints${paramTiempo}&_nocache=${timestamp}`);
+    const respuesta = await fetch(`https://realearth.ssec.wisc.edu/api/shapes?products=glmgrouppoints${paramTiempo}&_nocache=${timestamp}`, { cache: 'no-store' });
     if (!respuesta.ok) return;
 
     const datos = await respuesta.json();
