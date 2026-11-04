@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -7,11 +8,15 @@
   <!-- Modern Engineering & Tactical Typography -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap"
+    rel="stylesheet">
   <!-- Leaflet CSS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
   <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
   <div id="app-root">
     <!-- Map Container -->
@@ -23,7 +28,8 @@
         <span class="live-dot" title="Transmisión Activa"></span>
         <div class="brand-titles">
           <span class="brand-code">GOES-19<span class="hide-on-mobile-inline"> // ABI-L2</span></span>
-          <span class="brand-region">ECUADOR &bull; GALÁPAGOS <b style="color:var(--accent-cyan); font-weight:500;">| Por Henry Ruiz</b></span>
+          <span class="brand-region">ECUADOR &bull; GALÁPAGOS <b style="color:var(--accent-cyan); font-weight:500;">|
+              Por Henry Ruiz</b></span>
         </div>
       </div>
 
@@ -40,7 +46,8 @@
           <span class="t-label">RAYOS<span class="hide-on-mobile-inline"> EC</span></span>
           <span class="t-value mono text-amber" id="header-lightning-count">0</span>
         </div>
-        <div class="telemetry-item cadence-item" id="telemetry-cadence" title="Clic para alternar cadencia (10m, 5m, 2m) o forzar recarga">
+        <div class="telemetry-item cadence-item" id="telemetry-cadence"
+          title="Clic para alternar cadencia (10m, 5m, 2m) o forzar recarga">
           <span class="t-label">CADENCIA ▾</span>
           <span class="t-value mono text-accent" id="header-countdown">10:00</span>
         </div>
@@ -48,7 +55,8 @@
 
       <div class="header-actions">
         <button id="btn-locate" class="tool-btn" aria-label="Mi ubicación" title="Obtener y centrar en mi ubicación">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2"
+            stroke-linecap="round" stroke-linejoin="round">
             <line x1="12" y1="2" x2="12" y2="6"></line>
             <line x1="12" y1="18" x2="12" y2="22"></line>
             <line x1="2" y1="12" x2="6" y2="12"></line>
@@ -58,12 +66,15 @@
           </svg>
         </button>
         <button id="btn-refresh" class="tool-btn" aria-label="Actualizar satélite" title="Forzar escaneo satelital">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-1.19"/>
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-1.19" />
           </svg>
         </button>
-        <button id="btn-toggle-sidebar" class="tool-btn active" aria-label="Consola de opciones" title="Ocultar o mostrar opciones (Esc)">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <button id="btn-toggle-sidebar" class="tool-btn active" aria-label="Consola de opciones"
+          title="Ocultar o mostrar opciones (Esc)">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2"
+            stroke-linecap="round" stroke-linejoin="round">
             <line x1="4" y1="21" x2="4" y2="14"></line>
             <line x1="4" y1="10" x2="4" y2="3"></line>
             <line x1="12" y1="21" x2="12" y2="12"></line>
@@ -82,7 +93,8 @@
     <aside class="control-drawer" id="control-drawer">
       <div class="drawer-header">
         <span class="drawer-title">CONSOLA METEOROLÓGICA</span>
-        <button class="drawer-close-btn" id="btn-close-sidebar" aria-label="Cerrar opciones" title="Ocultar opciones (Esc)">✕</button>
+        <button class="drawer-close-btn" id="btn-close-sidebar" aria-label="Cerrar opciones"
+          title="Ocultar opciones (Esc)">✕</button>
       </div>
 
       <div class="drawer-scroll">
@@ -90,7 +102,7 @@
         <div class="drawer-section">
           <div class="section-label">CANAL MULTIESPECTRAL ABI</div>
           <div class="layer-list">
-            
+
             <label class="layer-option active" data-layer="G19-ABI-FD-BAND13-GRAD">
               <input type="radio" name="satellite-channel" value="G19-ABI-FD-BAND13-GRAD" checked>
               <div class="layer-info">
@@ -185,6 +197,12 @@
             </label>
 
             <label class="toggle-row">
+              <span class="toggle-text">Leyenda Térmica Flotante</span>
+              <input type="checkbox" id="toggle-legend" checked>
+              <span class="toggle-switch"></span>
+            </label>
+
+            <label class="toggle-row">
               <span class="toggle-text">Capa Satélite Esri (Desactivar para Calles OSM)</span>
               <input type="checkbox" id="toggle-basemap" checked>
               <span class="toggle-switch"></span>
@@ -196,11 +214,6 @@
               <span class="toggle-switch"></span>
             </label>
 
-            <label class="toggle-row">
-              <span class="toggle-text">Marcadores de Referencia (Ciudades)</span>
-              <input type="checkbox" id="toggle-cities" checked>
-              <span class="toggle-switch"></span>
-            </label>
           </div>
         </div>
 
@@ -214,19 +227,28 @@
           </div>
         </div>
 
-        <!-- Section: Regions -->
+        <!-- Section: Enfoque Territorial (Lugares) -->
         <div class="drawer-section">
-          <div class="section-label">ENFOQUE TERRITORIAL</div>
-          <div class="segmented-control">
-            <button class="seg-btn active" data-region="country">Ecuador</button>
-            <button class="seg-btn" data-region="costa">Costa</button>
-            <button class="seg-btn" data-region="sierra">Sierra</button>
-            <button class="seg-btn" data-region="oriente">Oriente</button>
-            <button class="seg-btn" data-region="galapagos">Galápagos</button>
+          <div class="section-label">ENFOQUE TERRITORIAL (LUGARES)</div>
+          <div class="places-grid" id="places-selector">
+            <button class="place-btn active full-width" data-place="pais">🌐 Ecuador (Vista Nacional)</button>
+            <button class="place-btn" data-place="guayaquil">Guayaquil</button>
+            <button class="place-btn" data-place="quito">Quito</button>
+            <button class="place-btn" data-place="cuenca">Cuenca</button>
+            <button class="place-btn" data-place="manta">Manta</button>
+            <button class="place-btn" data-place="santodomingo">Sto. Domingo</button>
+            <button class="place-btn" data-place="machala">Machala</button>
+            <button class="place-btn" data-place="esmeraldas">Esmeraldas</button>
+            <button class="place-btn" data-place="ambato">Ambato</button>
+            <button class="place-btn" data-place="loja">Loja</button>
+            <button class="place-btn" data-place="coca">El Coca</button>
+            <button class="place-btn" data-place="puyo">Puyo</button>
+            <button class="place-btn" data-place="galapagos">Galápagos</button>
           </div>
         </div>
 
-        <div style="padding: 12px 4px 4px 4px; border-top: 1px solid var(--panel-border); font-size: 0.68rem; color: var(--text-muted); display:flex; justify-content:space-between; align-items:center;">
+        <div
+          style="padding: 12px 4px 4px 4px; border-top: 1px solid var(--panel-border); font-size: 0.68rem; color: var(--text-muted); display:flex; justify-content:space-between; align-items:center;">
           <span>Desarrollado por <b>Henry Ruiz</b></span>
           <span class="mono">v1.2</span>
         </div>
@@ -236,8 +258,11 @@
     <!-- Floating Thermal Legend -->
     <div class="floating-legend" id="floating-legend">
       <div class="fl-top">
-        <span class="fl-title" id="legend-product-title">Infrarrojo B13 (Clean IR)</span>
-        <span class="fl-crit" id="legend-product-sub">Tormenta severa: &lt; -65°C</span>
+        <div class="fl-title-group">
+          <span class="fl-title" id="legend-product-title">Infrarrojo B13 (Clean IR)</span>
+          <span class="fl-crit" id="legend-product-sub">Tormenta severa: &lt; -65°C</span>
+        </div>
+        <button class="fl-close-btn" id="btn-close-legend" title="Ocultar leyenda térmica" aria-label="Ocultar leyenda">✕</button>
       </div>
       <div class="fl-bar-wrap">
         <div class="fl-bar" id="legend-bar"></div>
@@ -260,7 +285,9 @@
   </div>
 
   <!-- Leaflet JS -->
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <script src="app.js"></script>
 </body>
+
 </html>

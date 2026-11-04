@@ -226,11 +226,29 @@ html, body {
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--panel-border);
   border-radius: 8px;
-  z-index: 1000;
+  z-index: 1100;
   display: flex;
   flex-direction: column;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
   transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;
+}
+
+/* Prevent legend collision on all desktop and tablet screen widths */
+@media (min-width: 769px) and (max-width: 1100px) {
+  .control-drawer:not(.closed) ~ .floating-legend,
+  .drawer-open .floating-legend {
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transform: translateY(16px) !important;
+  }
+}
+
+/* Shift zoom controls on desktop when drawer is open */
+@media (min-width: 769px) {
+  .drawer-open .leaflet-control-zoom {
+    transform: translateX(-352px);
+    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  }
 }
 
 .control-drawer.closed {
@@ -489,30 +507,103 @@ html, body {
 }
 
 /* ==========================================================================
+   PLACES GRID (Enfoque Territorial por Ciudades / Lugares)
+   ========================================================================== */
+.places-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.place-btn {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--panel-border);
+  color: var(--text-secondary);
+  font-family: var(--font-primary);
+  font-size: 0.7rem;
+  font-weight: 500;
+  padding: 8px 4px;
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.place-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--panel-border-hover);
+  color: #ffffff;
+}
+
+.place-btn.active {
+  background: rgba(6, 182, 212, 0.14);
+  border-color: var(--accent-cyan);
+  color: var(--accent-cyan);
+  font-weight: 600;
+  box-shadow: 0 0 10px rgba(6, 182, 212, 0.2);
+}
+
+.place-btn.full-width {
+  grid-column: 1 / -1;
+  font-weight: 600;
+  font-size: 0.74rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.place-btn.full-width.active {
+  background: rgba(6, 182, 212, 0.18);
+  border-color: var(--accent-cyan);
+}
+
+/* ==========================================================================
    FLOATING THERMAL LEGEND
    ========================================================================== */
 .floating-legend {
   position: absolute;
   bottom: 20px;
   left: 12px;
-  width: 360px;
+  width: auto;
+  min-width: 250px;
+  max-width: 360px;
   background: var(--panel-bg);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--panel-border);
   border-radius: 8px;
-  padding: 10px 14px;
-  z-index: 1000;
+  padding: 8px 12px;
+  z-index: 900;
   display: flex;
   flex-direction: column;
   gap: 6px;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+  transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1), transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.floating-legend.hidden {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transform: translateY(12px) !important;
 }
 
 .fl-top {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
+  align-items: center;
+  gap: 8px;
+}
+
+.fl-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
 }
 
 .fl-title {
@@ -522,9 +613,31 @@ html, body {
 }
 
 .fl-crit {
-  font-size: 0.65rem;
+  font-size: 0.62rem;
   color: var(--accent-rose);
   font-weight: 600;
+}
+
+.fl-close-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--panel-border);
+  color: var(--text-muted);
+  font-size: 11px;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.fl-close-btn:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #ef4444;
 }
 
 .fl-bar-wrap {
@@ -553,31 +666,34 @@ html, body {
   font-weight: 700;
 }
 
-/* Sync Banner */
+/* Sync Banner - Centered at the top, immune to bottom overlay collision */
 .sync-banner {
   position: absolute;
-  bottom: 90px;
-  left: 12px;
+  top: 68px;
+  left: 50%;
+  transform: translate(-50%, -10px);
   background: var(--panel-bg);
-  backdrop-filter: blur(12px);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--panel-border);
-  padding: 6px 12px;
-  border-radius: 6px;
-  font-size: 0.7rem;
-  color: var(--text-secondary);
+  padding: 5px 14px;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  color: var(--text-primary);
   display: flex;
   align-items: center;
   gap: 8px;
-  z-index: 1000;
+  z-index: 950;
   opacity: 0;
-  transform: translateY(6px);
   pointer-events: none;
-  transition: all 0.25s ease;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
 }
 
 .sync-banner.active {
   opacity: 1;
-  transform: translateY(0);
+  transform: translate(-50%, 0);
+  pointer-events: auto;
 }
 
 .sync-spin {
@@ -620,24 +736,12 @@ html, body {
   color: #090c10 !important;
 }
 
-/* Minimal City Badges */
-.city-badge {
-  background: rgba(9, 12, 16, 0.88);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 4px;
-  padding: 1px 6px;
-  font-size: 0.65rem;
-  font-weight: 500;
-  color: #fff;
-  white-space: nowrap;
-  letter-spacing: 0.3px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.5);
-}
+/* City badges removed - Esri base map labels provide native reference */
 
 /* ==========================================================================
    MOBILE & RESPONSIVE BREAKPOINTS
    ========================================================================== */
-@media (max-width: 650px) {
+@media (max-width: 768px) {
   .app-header {
     height: auto;
     min-height: 40px;
@@ -746,10 +850,10 @@ html, body {
   }
 
   .drawer-close-btn {
-    display: block;
+    display: flex;
   }
 
-  /* Bottom sheet behavior on mobile */
+  /* Bottom sheet behavior on mobile & tablets */
   .control-drawer {
     top: auto;
     bottom: 0;
@@ -759,20 +863,36 @@ html, body {
     max-height: 75vh;
     border-radius: 16px 16px 0 0;
     transform: translateY(100%);
+    opacity: 0;
+    pointer-events: none;
     box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.6);
     -webkit-overflow-scrolling: touch;
+    z-index: 1100;
   }
 
   .control-drawer.open {
     transform: translateY(0);
+    opacity: 1;
+    pointer-events: auto;
   }
 
   .floating-legend {
     bottom: 12px;
     left: 8px;
-    right: 56px; /* Give room for the bottom-right zoom buttons */
+    right: 54px; /* Room for bottom-right zoom buttons */
+    max-width: none;
     width: auto;
     padding: 6px 8px;
+    z-index: 900;
+  }
+
+  /* CRITICAL: Hide legend & sync banner completely when bottom sheet is open */
+  .control-drawer.open ~ .floating-legend,
+  .control-drawer.open ~ .sync-banner,
+  .drawer-open .floating-legend {
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transform: translateY(24px) !important;
   }
 
   .fl-title {
@@ -794,19 +914,28 @@ html, body {
   }
 
   .leaflet-control-zoom a {
-    width: 32px !important;
-    height: 32px !important;
-    line-height: 32px !important;
-    font-size: 16px !important;
+    width: 30px !important;
+    height: 30px !important;
+    line-height: 30px !important;
+    font-size: 15px !important;
   }
 
   .sync-banner {
-    bottom: 75px;
-    left: 8px;
+    top: 52px;
+    font-size: 0.66rem;
+    padding: 4px 10px;
   }
 }
 
 @media (max-width: 380px) {
+  .places-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .place-btn.full-width {
+    grid-column: 1 / -1;
+  }
+
   .app-header {
     padding: 4px 6px;
     gap: 4px;

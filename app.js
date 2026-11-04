@@ -1,27 +1,21 @@
 // Desarrollado por Henry Ruiz
 // Monitor de tormentas satelitales GOES-19 para Ecuador y Galapagos
 
-const REGIONES = {
-  pais: { centro: [-1.4, -82.0], zoom: 6 },
-  costa: { centro: [-2.18, -79.9], zoom: 10 },
-  sierra: { centro: [-0.22, -78.5], zoom: 10 },
-  oriente: { centro: [-1.2, -77.0], zoom: 9 },
-  galapagos: { centro: [-0.8, -90.5], zoom: 8 }
+const LUGARES = {
+  pais: { nombre: 'Ecuador', centro: [-1.4, -82.0], zoom: 6 },
+  guayaquil: { nombre: 'Guayaquil', centro: [-2.1894, -79.8891], zoom: 11 },
+  quito: { nombre: 'Quito', centro: [-0.1807, -78.4678], zoom: 11 },
+  cuenca: { nombre: 'Cuenca', centro: [-2.9001, -79.0059], zoom: 11 },
+  manta: { nombre: 'Manta', centro: [-0.9677, -80.7089], zoom: 11 },
+  santodomingo: { nombre: 'Santo Domingo', centro: [-0.2530, -79.1754], zoom: 11 },
+  machala: { nombre: 'Machala', centro: [-3.2581, -79.9554], zoom: 11 },
+  esmeraldas: { nombre: 'Esmeraldas', centro: [0.9682, -79.6517], zoom: 11 },
+  ambato: { nombre: 'Ambato', centro: [-1.2491, -78.6168], zoom: 11 },
+  loja: { nombre: 'Loja', centro: [-3.9931, -79.2042], zoom: 11 },
+  coca: { nombre: 'El Coca', centro: [-0.4664, -76.9871], zoom: 10 },
+  puyo: { nombre: 'Puyo', centro: [-1.4837, -77.9983], zoom: 10 },
+  galapagos: { nombre: 'Galápagos', centro: [-0.8, -90.5], zoom: 8 }
 };
-
-const CIUDADES_REFERENCIA = [
-  { nombre: 'Quito', lat: -0.1807, lon: -78.4678 },
-  { nombre: 'Guayaquil', lat: -2.1894, lon: -79.8891 },
-  { nombre: 'Cuenca', lat: -2.9001, lon: -79.0059 },
-  { nombre: 'Manta', lat: -0.9677, lon: -80.7089 },
-  { nombre: 'Esmeraldas', lat: 0.9682, lon: -79.6517 },
-  { nombre: 'Loja', lat: -3.9931, lon: -79.2042 },
-  { nombre: 'El Coca', lat: -0.4664, lon: -76.9871 },
-  { nombre: 'Puyo', lat: -1.4837, lon: -77.9983 },
-  { nombre: 'Lago Agrio', lat: 0.0847, lon: -76.8828 },
-  { nombre: 'Macas', lat: -2.3087, lon: -78.1114 },
-  { nombre: 'Galápagos', lat: -0.7444, lon: -90.3138 }
-];
 
 // Polígono simplificado de alta fidelidad del territorio nacional de Ecuador
 const POLIGONO_ECUADOR = [
@@ -178,7 +172,6 @@ let temporizadorMovimiento = null;
 let capaCalles;
 let capaSateliteBase;
 let capaLimites;
-let grupoCiudades;
 let grupoRayos;
 let capaDensidadRayos = null;
 let marcadorUsuario = null;
@@ -191,6 +184,11 @@ let ultimoConteoRayos = 0;
 let coordenadasUsuarioActual = null;
 
 document.addEventListener('DOMContentLoaded', () => {
+  const appRoot = document.getElementById('app-root');
+  if (window.innerWidth > 768 && localStorage.getItem('panel_opciones_visible') !== 'false') {
+    if (appRoot) appRoot.classList.add('drawer-open');
+  }
+
   iniciarMapa();
   vincularEventosInterfaz();
   ejecutarRecargaCompleta('inicio');
@@ -206,8 +204,8 @@ function iniciarMapa() {
   );
 
   mapa = L.map('map', {
-    center: REGIONES.pais.centro,
-    zoom: REGIONES.pais.zoom,
+    center: LUGARES.pais.centro,
+    zoom: LUGARES.pais.zoom,
     minZoom: 6,
     maxZoom: 18,
     maxBounds: limitesEcuador,
@@ -231,18 +229,6 @@ function iniciarMapa() {
     zIndex: 500,
     maxZoom: 18
   }).addTo(mapa);
-
-  grupoCiudades = L.layerGroup().addTo(mapa);
-  CIUDADES_REFERENCIA.forEach(ciudad => {
-    const htmlMarcador = `<div class="city-badge">${ciudad.nombre}</div>`;
-    const icono = L.divIcon({
-      className: 'custom-badge-icon',
-      html: htmlMarcador,
-      iconSize: [80, 18],
-      iconAnchor: [40, 9]
-    });
-    L.marker([ciudad.lat, ciudad.lon], { icon: icono }).addTo(grupoCiudades);
-  });
 
   grupoRayos = L.layerGroup().addTo(mapa);
 
@@ -440,14 +426,23 @@ function vincularEventosInterfaz() {
     }
   });
 
-  const toggleCiudades = document.getElementById('toggle-cities');
-  toggleCiudades.addEventListener('change', (evento) => {
-    if (evento.target.checked) {
-      mapa.addLayer(grupoCiudades);
-    } else {
-      mapa.removeLayer(grupoCiudades);
-    }
-  });
+  const toggleLeyenda = document.getElementById('toggle-legend');
+  if (toggleLeyenda) {
+    toggleLeyenda.checked = localStorage.getItem('leyenda_termica_visible') !== 'false';
+    aplicarVisibilidadLeyenda(toggleLeyenda.checked);
+    toggleLeyenda.addEventListener('change', (evento) => {
+      aplicarVisibilidadLeyenda(evento.target.checked);
+    });
+  }
+
+  const btnCloseLegend = document.getElementById('btn-close-legend');
+  if (btnCloseLegend) {
+    btnCloseLegend.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (toggleLeyenda) toggleLeyenda.checked = false;
+      aplicarVisibilidadLeyenda(false);
+    });
+  }
 
   const toggleRayos = document.getElementById('toggle-lightning');
   if (toggleRayos) {
@@ -489,16 +484,21 @@ function vincularEventosInterfaz() {
     ejecutarRecargaCompleta('manual');
   });
 
-  // Configuración territorial (filtrada para no colisionar con selector de cadencia)
-  const botonesRegion = document.querySelectorAll('.seg-btn[data-region]');
-  botonesRegion.forEach(boton => {
+  // Configuración territorial por lugares / ciudades clave
+  const botonesLugar = document.querySelectorAll('.place-btn[data-place]');
+  botonesLugar.forEach(boton => {
     boton.addEventListener('click', () => {
-      botonesRegion.forEach(item => item.classList.remove('active'));
+      botonesLugar.forEach(item => item.classList.remove('active'));
       boton.classList.add('active');
 
-      const claveRegion = boton.getAttribute('data-region');
-      if (REGIONES[claveRegion]) {
-        mapa.flyTo(REGIONES[claveRegion].centro, REGIONES[claveRegion].zoom, { duration: 1.0 });
+      const claveLugar = boton.getAttribute('data-place');
+      if (LUGARES[claveLugar]) {
+        mapa.flyTo(LUGARES[claveLugar].centro, LUGARES[claveLugar].zoom, { duration: 1.0 });
+      }
+
+      // En móviles/tablets, cerrar la consola automáticamente para apreciar el vuelo al lugar
+      if (window.innerWidth <= 768) {
+        alternarConsolaOpciones(false);
       }
     });
   });
@@ -560,9 +560,10 @@ function vincularEventosInterfaz() {
 function alternarConsolaOpciones(forzarEstado = null) {
   const panel = document.getElementById('control-drawer');
   const botonToggle = document.getElementById('btn-toggle-sidebar');
+  const appRoot = document.getElementById('app-root');
   if (!panel) return;
 
-  const esMovil = window.innerWidth <= 650;
+  const esMovil = window.innerWidth <= 768;
 
   if (esMovil) {
     const debeAbrir = forzarEstado !== null ? forzarEstado : !panel.classList.contains('open');
@@ -570,9 +571,11 @@ function alternarConsolaOpciones(forzarEstado = null) {
       panel.classList.add('open');
       panel.classList.remove('closed');
       if (botonToggle) botonToggle.classList.add('active');
+      if (appRoot) appRoot.classList.add('drawer-open');
     } else {
       panel.classList.remove('open');
       if (botonToggle) botonToggle.classList.remove('active');
+      if (appRoot) appRoot.classList.remove('drawer-open');
     }
   } else {
     // En escritorio: por defecto está abierto. La clase 'closed' lo oculta hacia la derecha.
@@ -581,17 +584,30 @@ function alternarConsolaOpciones(forzarEstado = null) {
     if (debeAbrir) {
       panel.classList.remove('closed');
       if (botonToggle) botonToggle.classList.add('active');
+      if (appRoot) appRoot.classList.add('drawer-open');
       localStorage.setItem('panel_opciones_visible', 'true');
     } else {
       panel.classList.add('closed');
       if (botonToggle) botonToggle.classList.remove('active');
+      if (appRoot) appRoot.classList.remove('drawer-open');
       localStorage.setItem('panel_opciones_visible', 'false');
     }
   }
 }
 
+function aplicarVisibilidadLeyenda(visible) {
+  const contenedor = document.getElementById('floating-legend');
+  if (!contenedor) return;
+  localStorage.setItem('leyenda_termica_visible', visible ? 'true' : 'false');
+  contenedor.classList.toggle('hidden', !visible);
+}
+
 function actualizarLeyendaTermica(producto) {
   const contenedor = document.getElementById('floating-legend');
+  const leyendaHabilitada = localStorage.getItem('leyenda_termica_visible') !== 'false';
+  if (!leyendaHabilitada && contenedor) {
+    contenedor.classList.add('hidden');
+  }
   const titulo = document.getElementById('legend-product-title');
   const subtitulo = document.getElementById('legend-product-sub');
   const barra = document.getElementById('legend-bar');
