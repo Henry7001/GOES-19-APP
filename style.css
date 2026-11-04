@@ -507,60 +507,129 @@ html, body {
 }
 
 /* ==========================================================================
-   PLACES GRID (Enfoque Territorial por Ciudades / Lugares)
+   TERRITORY SELECTOR (Combos Provincia y Ciudad / Sector)
    ========================================================================== */
-.places-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
+.territory-box {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
 }
 
-.place-btn {
+.territory-national-btn {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--panel-border);
+  color: var(--text-secondary);
+  font-family: var(--font-primary);
+  font-size: 0.74rem;
+  font-weight: 600;
+  padding: 7px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.18s ease;
+}
+
+.territory-national-btn:hover {
+  background: rgba(255, 255, 255, 0.09);
+  color: #ffffff;
+  border-color: var(--panel-border-hover);
+}
+
+.territory-national-btn.active {
+  background: rgba(6, 182, 212, 0.16);
+  border-color: var(--accent-cyan);
+  color: var(--accent-cyan);
+  box-shadow: 0 0 10px rgba(6, 182, 212, 0.2);
+}
+
+.territory-select-group {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.territory-select-label {
+  font-size: 0.58rem;
+  color: var(--text-muted);
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+.territory-select {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  background-color: rgba(13, 17, 23, 0.95);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2338bdf8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  border: 1px solid var(--panel-border);
+  border-radius: 6px;
+  color: #ffffff;
+  font-family: var(--font-primary);
+  font-size: 0.72rem;
+  padding: 7px 28px 7px 9px;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.18s, box-shadow 0.18s, background-color 0.18s;
+}
+
+.territory-select:hover {
+  border-color: rgba(255, 255, 255, 0.25);
+  background-color: rgba(20, 26, 36, 0.95);
+}
+
+.territory-select:focus {
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.2);
+}
+
+.territory-select option {
+  background: #090d16;
+  color: #e2e8f0;
+  padding: 6px 8px;
+  font-size: 0.72rem;
+}
+
+.territory-shortcuts {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  margin-top: 1px;
+}
+
+.t-pill {
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid var(--panel-border);
   color: var(--text-secondary);
   font-family: var(--font-primary);
-  font-size: 0.7rem;
+  font-size: 0.65rem;
   font-weight: 500;
-  padding: 8px 4px;
-  border-radius: 6px;
+  padding: 5px 2px;
+  border-radius: 4px;
   cursor: pointer;
   text-align: center;
-  transition: all 0.18s ease;
+  transition: all 0.15s ease;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.place-btn:hover {
+.t-pill:hover {
   background: rgba(255, 255, 255, 0.08);
-  border-color: var(--panel-border-hover);
   color: #ffffff;
 }
 
-.place-btn.active {
-  background: rgba(6, 182, 212, 0.14);
+.t-pill.active {
+  background: rgba(6, 182, 212, 0.15);
   border-color: var(--accent-cyan);
   color: var(--accent-cyan);
   font-weight: 600;
-  box-shadow: 0 0 10px rgba(6, 182, 212, 0.2);
-}
-
-.place-btn.full-width {
-  grid-column: 1 / -1;
-  font-weight: 600;
-  font-size: 0.74rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 8px 10px;
-  background: rgba(255, 255, 255, 0.05);
-}
-
-.place-btn.full-width.active {
-  background: rgba(6, 182, 212, 0.18);
-  border-color: var(--accent-cyan);
 }
 
 /* ==========================================================================
@@ -928,12 +997,8 @@ html, body {
 }
 
 @media (max-width: 380px) {
-  .places-grid {
+  .territory-shortcuts {
     grid-template-columns: repeat(2, 1fr);
-  }
-
-  .place-btn.full-width {
-    grid-column: 1 / -1;
   }
 
   .app-header {

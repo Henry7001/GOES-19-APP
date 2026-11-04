@@ -1,20 +1,314 @@
 // Desarrollado por Henry Ruiz
 // Monitor de tormentas satelitales GOES-19 para Ecuador y Galapagos
 
-const LUGARES = {
-  pais: { nombre: 'Ecuador', centro: [-1.4, -82.0], zoom: 6 },
-  guayaquil: { nombre: 'Guayaquil', centro: [-2.1894, -79.8891], zoom: 11 },
-  quito: { nombre: 'Quito', centro: [-0.1807, -78.4678], zoom: 11 },
-  cuenca: { nombre: 'Cuenca', centro: [-2.9001, -79.0059], zoom: 11 },
-  manta: { nombre: 'Manta', centro: [-0.9677, -80.7089], zoom: 11 },
-  santodomingo: { nombre: 'Santo Domingo', centro: [-0.2530, -79.1754], zoom: 11 },
-  machala: { nombre: 'Machala', centro: [-3.2581, -79.9554], zoom: 11 },
-  esmeraldas: { nombre: 'Esmeraldas', centro: [0.9682, -79.6517], zoom: 11 },
-  ambato: { nombre: 'Ambato', centro: [-1.2491, -78.6168], zoom: 11 },
-  loja: { nombre: 'Loja', centro: [-3.9931, -79.2042], zoom: 11 },
-  coca: { nombre: 'El Coca', centro: [-0.4664, -76.9871], zoom: 10 },
-  puyo: { nombre: 'Puyo', centro: [-1.4837, -77.9983], zoom: 10 },
-  galapagos: { nombre: 'Galápagos', centro: [-0.8, -90.5], zoom: 8 }
+const DIVISION_TERRITORIAL = {
+  pais: {
+    nombre: 'Ecuador (Vista Nacional)',
+    centro: [-1.4, -82.0],
+    zoom: 6
+  },
+  provincias: {
+    guayas: {
+      nombre: 'Guayas',
+      centro: [-2.0, -79.9],
+      zoom: 9,
+      ciudades: [
+        { id: 'gye_centro', nombre: 'Guayaquil - Centro Urbano', centro: [-2.1894, -79.8891], zoom: 13 },
+        { id: 'gye_norte', nombre: 'Guayaquil - Norte (Martha de Roldós / Alborada)', centro: [-2.1465, -79.9142], zoom: 14 },
+        { id: 'gye_sur', nombre: 'Guayaquil - Sur (Guasmo / Pradera)', centro: [-2.2547, -79.8883], zoom: 14 },
+        { id: 'gye_ceibos', nombre: 'Guayaquil - Ceibos / Vía a la Costa', centro: [-2.1812, -80.0050], zoom: 13 },
+        { id: 'gye_sambo', nombre: 'Guayaquil - Vía Samborondón (La Puntilla)', centro: [-2.1425, -79.8650], zoom: 13 },
+        { id: 'daule_aurora', nombre: 'Daule - La Aurora', centro: [-2.0469, -79.9056], zoom: 13 },
+        { id: 'daule_cabecera', nombre: 'Daule - Cabecera Cantonal', centro: [-1.8631, -79.9778], zoom: 13 },
+        { id: 'duran', nombre: 'Durán (Eloy Alfaro)', centro: [-2.1697, -79.8492], zoom: 13 },
+        { id: 'milagro', nombre: 'Milagro', centro: [-2.1342, -79.5942], zoom: 13 },
+        { id: 'samborondon', nombre: 'Samborondón (Cabecera)', centro: [-1.9628, -79.7236], zoom: 13 },
+        { id: 'salitre', nombre: 'Salitre', centro: [-1.8217, -79.8172], zoom: 13 },
+        { id: 'playas', nombre: 'Playas (General Villamil)', centro: [-2.6319, -80.3881], zoom: 13 },
+        { id: 'naranjal', nombre: 'Naranjal', centro: [-2.6736, -79.6178], zoom: 12 },
+        { id: 'el_empalme', nombre: 'El Empalme', centro: [-1.0436, -79.6358], zoom: 12 },
+        { id: 'balzar', nombre: 'Balzar', centro: [-1.3653, -79.9056], zoom: 12 },
+        { id: 'pedro_carbo', nombre: 'Pedro Carbo', centro: [-1.8156, -80.2336], zoom: 12 },
+        { id: 'toda_guayas', nombre: '── Toda la Provincia del Guayas ──', centro: [-2.0, -79.9], zoom: 9 }
+      ]
+    },
+    pichincha: {
+      nombre: 'Pichincha',
+      centro: [-0.15, -78.5],
+      zoom: 9,
+      ciudades: [
+        { id: 'uio_centro', nombre: 'Quito - Centro Histórico', centro: [-0.2202, -78.5123], zoom: 13 },
+        { id: 'uio_norte', nombre: 'Quito - Norte (La Carolina / Calderón)', centro: [-0.1650, -78.4850], zoom: 13 },
+        { id: 'uio_sur', nombre: 'Quito - Sur (Chillogallo / Quitumbe)', centro: [-0.2850, -78.5500], zoom: 13 },
+        { id: 'uio_valles', nombre: 'Quito - Valles (Cumbayá / Tumbaco)', centro: [-0.2050, -78.4350], zoom: 13 },
+        { id: 'uio_chillos', nombre: 'Valle de Los Chillos (San Rafael)', centro: [-0.3150, -78.4500], zoom: 13 },
+        { id: 'ruminahui', nombre: 'Rumiñahui (Sangolquí)', centro: [-0.3333, -78.4489], zoom: 13 },
+        { id: 'mejia', nombre: 'Mejía (Machachi)', centro: [-0.5100, -78.5670], zoom: 12 },
+        { id: 'cayambe', nombre: 'Cayambe', centro: [0.0417, -78.1450], zoom: 12 },
+        { id: 'tabacundo', nombre: 'Tabacundo', centro: [0.0150, -78.2150], zoom: 12 },
+        { id: 'puerto_quito', nombre: 'Puerto Quito', centro: [0.1214, -79.2556], zoom: 12 },
+        { id: 'toda_pichincha', nombre: '── Toda la Provincia de Pichincha ──', centro: [-0.15, -78.5], zoom: 9 }
+      ]
+    },
+    azuay: {
+      nombre: 'Azuay',
+      centro: [-2.95, -79.05],
+      zoom: 9,
+      ciudades: [
+        { id: 'cue_centro', nombre: 'Cuenca - Centro Urbano', centro: [-2.9001, -79.0059], zoom: 13 },
+        { id: 'gualaceo', nombre: 'Gualaceo', centro: [-2.8931, -78.7781], zoom: 13 },
+        { id: 'chordeleg', nombre: 'Chordeleg', centro: [-2.9239, -78.7758], zoom: 13 },
+        { id: 'paute', nombre: 'Paute', centro: [-2.7778, -78.7597], zoom: 13 },
+        { id: 'santa_isabel', nombre: 'Santa Isabel (Yunguilla)', centro: [-3.2750, -79.3150], zoom: 12 },
+        { id: 'giron', nombre: 'Girón', centro: [-3.1611, -79.1464], zoom: 12 },
+        { id: 'toda_azuay', nombre: '── Toda la Provincia del Azuay ──', centro: [-2.95, -79.05], zoom: 9 }
+      ]
+    },
+    manabi: {
+      nombre: 'Manabí',
+      centro: [-0.95, -80.2],
+      zoom: 9,
+      ciudades: [
+        { id: 'manta', nombre: 'Manta (Puerto / Tarqui)', centro: [-0.9677, -80.7089], zoom: 13 },
+        { id: 'portoviejo', nombre: 'Portoviejo', centro: [-1.0544, -80.4544], zoom: 13 },
+        { id: 'chone', nombre: 'Chone', centro: [-0.6978, -80.0931], zoom: 12 },
+        { id: 'bahia', nombre: 'Bahía de Caráquez', centro: [-0.5986, -80.4239], zoom: 13 },
+        { id: 'pedernales', nombre: 'Pedernales', centro: [0.0719, -80.0525], zoom: 12 },
+        { id: 'montecristi', nombre: 'Montecristi', centro: [-1.0500, -80.6600], zoom: 13 },
+        { id: 'jipijapa', nombre: 'Jipijapa', centro: [-1.3486, -80.5786], zoom: 12 },
+        { id: 'pto_lopez', nombre: 'Puerto López', centro: [-1.5658, -80.8122], zoom: 13 },
+        { id: 'toda_manabi', nombre: '── Toda la Provincia de Manabí ──', centro: [-0.95, -80.2], zoom: 9 }
+      ]
+    },
+    el_oro: {
+      nombre: 'El Oro',
+      centro: [-3.5, -79.8],
+      zoom: 9,
+      ciudades: [
+        { id: 'machala', nombre: 'Machala', centro: [-3.2581, -79.9554], zoom: 13 },
+        { id: 'pto_bolivar', nombre: 'Puerto Bolívar', centro: [-3.2667, -79.9986], zoom: 13 },
+        { id: 'pasaje', nombre: 'Pasaje', centro: [-3.3256, -79.8069], zoom: 13 },
+        { id: 'santa_rosa', nombre: 'Santa Rosa', centro: [-3.4486, -79.9597], zoom: 13 },
+        { id: 'huaquillas', nombre: 'Huaquillas', centro: [-3.4753, -80.2306], zoom: 13 },
+        { id: 'arenillas', nombre: 'Arenillas', centro: [-3.5519, -80.0664], zoom: 12 },
+        { id: 'zaruma_pinas', nombre: 'Zaruma / Piñas', centro: [-3.6917, -79.6111], zoom: 12 },
+        { id: 'toda_el_oro', nombre: '── Toda la Provincia de El Oro ──', centro: [-3.5, -79.8], zoom: 9 }
+      ]
+    },
+    los_rios: {
+      nombre: 'Los Ríos',
+      centro: [-1.5, -79.5],
+      zoom: 9,
+      ciudades: [
+        { id: 'babahoyo', nombre: 'Babahoyo', centro: [-1.8022, -79.5342], zoom: 13 },
+        { id: 'quevedo', nombre: 'Quevedo', centro: [-1.0286, -79.4636], zoom: 13 },
+        { id: 'vinces', nombre: 'Vinces', centro: [-1.5564, -79.7522], zoom: 13 },
+        { id: 'ventanas', nombre: 'Ventanas', centro: [-1.4439, -79.4589], zoom: 13 },
+        { id: 'buena_fe', nombre: 'Buena Fe', centro: [-0.8931, -79.4908], zoom: 13 },
+        { id: 'toda_los_rios', nombre: '── Toda la Provincia de Los Ríos ──', centro: [-1.5, -79.5], zoom: 9 }
+      ]
+    },
+    esmeraldas: {
+      nombre: 'Esmeraldas',
+      centro: [0.8, -79.5],
+      zoom: 9,
+      ciudades: [
+        { id: 'esmeraldas_ciu', nombre: 'Esmeraldas (Ciudad)', centro: [0.9682, -79.6517], zoom: 13 },
+        { id: 'atacames', nombre: 'Atacames / Tonsupa', centro: [0.8686, -79.8458], zoom: 13 },
+        { id: 'muisne_same', nombre: 'Muisne / Same', centro: [0.6125, -80.0194], zoom: 12 },
+        { id: 'quininde', nombre: 'Quinindé (Rosa Zárate)', centro: [0.3289, -79.4678], zoom: 12 },
+        { id: 'san_lorenzo', nombre: 'San Lorenzo', centro: [1.2861, -78.8353], zoom: 12 },
+        { id: 'toda_esmeraldas', nombre: '── Toda la Provincia de Esmeraldas ──', centro: [0.8, -79.5], zoom: 9 }
+      ]
+    },
+    santodomingo: {
+      nombre: 'Santo Domingo de los Tsáchilas',
+      centro: [-0.25, -79.2],
+      zoom: 10,
+      ciudades: [
+        { id: 'sd_centro', nombre: 'Santo Domingo (Centro / Urbano)', centro: [-0.2530, -79.1754], zoom: 13 },
+        { id: 'la_concordia', nombre: 'La Concordia', centro: [0.0050, -79.3958], zoom: 13 },
+        { id: 'toda_sd', nombre: '── Toda la Provincia Santo Domingo ──', centro: [-0.25, -79.2], zoom: 10 }
+      ]
+    },
+    tungurahua: {
+      nombre: 'Tungurahua',
+      centro: [-1.3, -78.6],
+      zoom: 10,
+      ciudades: [
+        { id: 'ambato', nombre: 'Ambato', centro: [-1.2491, -78.6168], zoom: 13 },
+        { id: 'banos', nombre: 'Baños de Agua Santa', centro: [-1.3964, -78.4244], zoom: 13 },
+        { id: 'pelileo', nombre: 'Pelileo', centro: [-1.3289, -78.5447], zoom: 13 },
+        { id: 'toda_tungurahua', nombre: '── Toda la Provincia de Tungurahua ──', centro: [-1.3, -78.6], zoom: 10 }
+      ]
+    },
+    chimborazo: {
+      nombre: 'Chimborazo',
+      centro: [-1.8, -78.7],
+      zoom: 9,
+      ciudades: [
+        { id: 'riobamba', nombre: 'Riobamba', centro: [-1.6710, -78.6477], zoom: 13 },
+        { id: 'guano', nombre: 'Guano', centro: [-1.6067, -78.6319], zoom: 13 },
+        { id: 'alausi', nombre: 'Alausí', centro: [-2.2047, -78.8475], zoom: 12 },
+        { id: 'toda_chimborazo', nombre: '── Toda la Provincia de Chimborazo ──', centro: [-1.8, -78.7], zoom: 9 }
+      ]
+    },
+    imbabura: {
+      nombre: 'Imbabura',
+      centro: [0.35, -78.2],
+      zoom: 10,
+      ciudades: [
+        { id: 'ibarra', nombre: 'Ibarra', centro: [0.3517, -78.1222], zoom: 13 },
+        { id: 'otavalo', nombre: 'Otavalo', centro: [0.2344, -78.2619], zoom: 13 },
+        { id: 'cotacachi', nombre: 'Cotacachi', centro: [0.3014, -78.2644], zoom: 13 },
+        { id: 'atuntaqui', nombre: 'Atuntaqui', centro: [0.3325, -78.2144], zoom: 13 },
+        { id: 'toda_imbabura', nombre: '── Toda la Provincia de Imbabura ──', centro: [0.35, -78.2], zoom: 10 }
+      ]
+    },
+    loja: {
+      nombre: 'Loja',
+      centro: [-4.0, -79.3],
+      zoom: 9,
+      ciudades: [
+        { id: 'loja_ciu', nombre: 'Loja (Ciudad)', centro: [-3.9931, -79.2042], zoom: 13 },
+        { id: 'catamayo', nombre: 'Catamayo', centro: [-3.9878, -79.3581], zoom: 13 },
+        { id: 'vilcabamba', nombre: 'Vilcabamba', centro: [-4.2617, -79.2231], zoom: 13 },
+        { id: 'cariamanga', nombre: 'Cariamanga', centro: [-4.3283, -79.5542], zoom: 12 },
+        { id: 'macara', nombre: 'Macará', centro: [-4.3817, -79.9458], zoom: 12 },
+        { id: 'toda_loja', nombre: '── Toda la Provincia de Loja ──', centro: [-4.0, -79.3], zoom: 9 }
+      ]
+    },
+    cotopaxi: {
+      nombre: 'Cotopaxi',
+      centro: [-0.9, -78.8],
+      zoom: 9,
+      ciudades: [
+        { id: 'latacunga', nombre: 'Latacunga', centro: [-0.9353, -78.6156], zoom: 13 },
+        { id: 'salcedo', nombre: 'Salcedo', centro: [-1.0450, -78.5911], zoom: 13 },
+        { id: 'la_mana', nombre: 'La Maná', centro: [-0.9417, -79.2250], zoom: 12 },
+        { id: 'pujili', nombre: 'Pujilí', centro: [-0.9575, -78.6958], zoom: 12 },
+        { id: 'toda_cotopaxi', nombre: '── Toda la Provincia de Cotopaxi ──', centro: [-0.9, -78.8], zoom: 9 }
+      ]
+    },
+    santa_elena: {
+      nombre: 'Santa Elena',
+      centro: [-2.2, -80.6],
+      zoom: 10,
+      ciudades: [
+        { id: 'salinas', nombre: 'Salinas / Chipipe', centro: [-2.2178, -80.9817], zoom: 13 },
+        { id: 'la_libertad', nombre: 'La Libertad', centro: [-2.2333, -80.9100], zoom: 13 },
+        { id: 'ste_cabecera', nombre: 'Santa Elena (Cabecera)', centro: [-2.2267, -80.8589], zoom: 13 },
+        { id: 'montanita', nombre: 'Montañita / Olón', centro: [-1.8286, -80.7533], zoom: 13 },
+        { id: 'ayangue', nombre: 'Ayangue', centro: [-1.9786, -80.7511], zoom: 13 },
+        { id: 'toda_santa_elena', nombre: '── Toda la Península de Santa Elena ──', centro: [-2.2, -80.6], zoom: 10 }
+      ]
+    },
+    canar: {
+      nombre: 'Cañar',
+      centro: [-2.5, -79.0],
+      zoom: 9,
+      ciudades: [
+        { id: 'azogues', nombre: 'Azogues', centro: [-2.7397, -78.8475], zoom: 13 },
+        { id: 'la_troncal', nombre: 'La Troncal', centro: [-2.4250, -79.3389], zoom: 13 },
+        { id: 'canar_ciu', nombre: 'Cañar (Ciudad)', centro: [-2.5594, -78.9378], zoom: 12 },
+        { id: 'toda_canar', nombre: '── Toda la Provincia de Cañar ──', centro: [-2.5, -79.0], zoom: 9 }
+      ]
+    },
+    carchi: {
+      nombre: 'Carchi',
+      centro: [0.7, -78.0],
+      zoom: 9,
+      ciudades: [
+        { id: 'tulcan', nombre: 'Tulcán', centro: [0.8122, -77.7178], zoom: 13 },
+        { id: 'san_gabriel', nombre: 'San Gabriel', centro: [0.5936, -77.8289], zoom: 12 },
+        { id: 'toda_carchi', nombre: '── Toda la Provincia del Carchi ──', centro: [0.7, -78.0], zoom: 9 }
+      ]
+    },
+    bolivar: {
+      nombre: 'Bolívar',
+      centro: [-1.6, -79.1],
+      zoom: 9,
+      ciudades: [
+        { id: 'guaranda', nombre: 'Guaranda', centro: [-1.5925, -79.0044], zoom: 13 },
+        { id: 'san_miguel', nombre: 'San Miguel / Chimbo', centro: [-1.7100, -79.0433], zoom: 12 },
+        { id: 'caluma', nombre: 'Caluma', centro: [-1.6319, -79.2558], zoom: 12 },
+        { id: 'toda_bolivar', nombre: '── Toda la Provincia de Bolívar ──', centro: [-1.6, -79.1], zoom: 9 }
+      ]
+    },
+    morona_santiago: {
+      nombre: 'Morona Santiago',
+      centro: [-2.5, -78.0],
+      zoom: 8,
+      ciudades: [
+        { id: 'macas', nombre: 'Macas', centro: [-2.3087, -78.1114], zoom: 13 },
+        { id: 'sucua', nombre: 'Sucúa', centro: [-2.4561, -78.1728], zoom: 12 },
+        { id: 'gualaquiza', nombre: 'Gualaquiza', centro: [-3.4036, -78.5808], zoom: 12 },
+        { id: 'toda_morona', nombre: '── Toda Morona Santiago ──', centro: [-2.5, -78.0], zoom: 8 }
+      ]
+    },
+    napo: {
+      nombre: 'Napo',
+      centro: [-0.7, -77.8],
+      zoom: 8,
+      ciudades: [
+        { id: 'tena', nombre: 'Tena', centro: [-0.9939, -77.8131], zoom: 13 },
+        { id: 'archidona', nombre: 'Archidona', centro: [-0.9100, -77.8089], zoom: 13 },
+        { id: 'baeza', nombre: 'Baeza', centro: [-0.4633, -77.8906], zoom: 12 },
+        { id: 'toda_napo', nombre: '── Toda la Provincia de Napo ──', centro: [-0.7, -77.8], zoom: 8 }
+      ]
+    },
+    orellana: {
+      nombre: 'Orellana',
+      centro: [-0.8, -76.8],
+      zoom: 8,
+      ciudades: [
+        { id: 'coca', nombre: 'El Coca (Pto. Francisco de Orellana)', centro: [-0.4664, -76.9871], zoom: 12 },
+        { id: 'loreto', nombre: 'Loreto', centro: [-0.6869, -77.3075], zoom: 12 },
+        { id: 'toda_orellana', nombre: '── Toda la Provincia de Orellana ──', centro: [-0.8, -76.8], zoom: 8 }
+      ]
+    },
+    pastaza: {
+      nombre: 'Pastaza',
+      centro: [-1.6, -76.8],
+      zoom: 8,
+      ciudades: [
+        { id: 'puyo', nombre: 'Puyo', centro: [-1.4837, -77.9983], zoom: 13 },
+        { id: 'mera_shell', nombre: 'Mera / Shell', centro: [-1.5036, -78.0642], zoom: 13 },
+        { id: 'toda_pastaza', nombre: '── Toda la Provincia de Pastaza ──', centro: [-1.6, -76.8], zoom: 8 }
+      ]
+    },
+    sucumbios: {
+      nombre: 'Sucumbíos',
+      centro: [0.1, -76.8],
+      zoom: 8,
+      ciudades: [
+        { id: 'lago_agrio', nombre: 'Nueva Loja (Lago Agrio)', centro: [0.0847, -76.8828], zoom: 13 },
+        { id: 'shushufindi', nombre: 'Shushufindi', centro: [-0.1856, -76.6536], zoom: 12 },
+        { id: 'toda_sucumbios', nombre: '── Toda la Provincia de Sucumbíos ──', centro: [0.1, -76.8], zoom: 8 }
+      ]
+    },
+    zamora_chinchipe: {
+      nombre: 'Zamora Chinchipe',
+      centro: [-3.9, -78.8],
+      zoom: 8,
+      ciudades: [
+        { id: 'zamora', nombre: 'Zamora', centro: [-4.0678, -78.9567], zoom: 13 },
+        { id: 'yantzaza', nombre: 'Yantzaza', centro: [-3.8306, -78.7611], zoom: 12 },
+        { id: 'toda_zamora', nombre: '── Toda Zamora Chinchipe ──', centro: [-3.9, -78.8], zoom: 8 }
+      ]
+    },
+    galapagos: {
+      nombre: 'Galápagos',
+      centro: [-0.8, -90.5],
+      zoom: 8,
+      ciudades: [
+        { id: 'santa_cruz', nombre: 'Puerto Ayora (Isla Santa Cruz)', centro: [-0.7444, -90.3138], zoom: 13 },
+        { id: 'san_cristobal', nombre: 'Pto. Baquerizo Moreno (San Cristóbal)', centro: [-0.9025, -89.6108], zoom: 13 },
+        { id: 'isabela', nombre: 'Puerto Villamil (Isla Isabela)', centro: [-0.9569, -90.9667], zoom: 13 },
+        { id: 'toda_galapagos', nombre: '── Archipiélago Completo (Galápagos) ──', centro: [-0.8, -90.5], zoom: 8 }
+      ]
+    }
+  }
 };
 
 // Polígono simplificado de alta fidelidad del territorio nacional de Ecuador
@@ -194,7 +488,11 @@ document.addEventListener('DOMContentLoaded', () => {
   ejecutarRecargaCompleta('inicio');
   iniciarContadorRecarga();
   iniciarDetectorRayos();
-  solicitarUbicacionUsuario(false);
+
+  // Solo solicitar ubicación automáticamente si es un dispositivo con GPS (móvil / tablet)
+  if (esDispositivoConGPS()) {
+    solicitarUbicacionUsuario(false);
+  }
 });
 
 function iniciarMapa() {
@@ -204,8 +502,8 @@ function iniciarMapa() {
   );
 
   mapa = L.map('map', {
-    center: LUGARES.pais.centro,
-    zoom: LUGARES.pais.zoom,
+    center: DIVISION_TERRITORIAL.pais.centro,
+    zoom: DIVISION_TERRITORIAL.pais.zoom,
     minZoom: 6,
     maxZoom: 18,
     maxBounds: limitesEcuador,
@@ -484,24 +782,8 @@ function vincularEventosInterfaz() {
     ejecutarRecargaCompleta('manual');
   });
 
-  // Configuración territorial por lugares / ciudades clave
-  const botonesLugar = document.querySelectorAll('.place-btn[data-place]');
-  botonesLugar.forEach(boton => {
-    boton.addEventListener('click', () => {
-      botonesLugar.forEach(item => item.classList.remove('active'));
-      boton.classList.add('active');
-
-      const claveLugar = boton.getAttribute('data-place');
-      if (LUGARES[claveLugar]) {
-        mapa.flyTo(LUGARES[claveLugar].centro, LUGARES[claveLugar].zoom, { duration: 1.0 });
-      }
-
-      // En móviles/tablets, cerrar la consola automáticamente para apreciar el vuelo al lugar
-      if (window.innerWidth <= 768) {
-        alternarConsolaOpciones(false);
-      }
-    });
-  });
+  // Configuración territorial jerárquica (Provincia y Ciudad / Sector)
+  iniciarSelectorTerritorial();
 
   // Configuración de cadencia de autorecarga en consola lateral
   const botonesCadencia = document.querySelectorAll('#cadence-selector .seg-btn');
@@ -555,6 +837,120 @@ function vincularEventosInterfaz() {
   if (window.innerWidth > 650 && localStorage.getItem('panel_opciones_visible') === 'false') {
     alternarConsolaOpciones(false);
   }
+}
+
+function iniciarSelectorTerritorial() {
+  const selectProvincia = document.getElementById('select-provincia');
+  const selectCiudad = document.getElementById('select-ciudad');
+  const btnNacional = document.getElementById('btn-focus-national');
+  const pillsRapidos = document.querySelectorAll('.t-pill[data-quick]');
+
+  if (!selectProvincia || !selectCiudad) return;
+
+  // Poblar combo de provincias
+  selectProvincia.innerHTML = '';
+  Object.keys(DIVISION_TERRITORIAL.provincias).forEach(claveProv => {
+    const prov = DIVISION_TERRITORIAL.provincias[claveProv];
+    const opcion = document.createElement('option');
+    opcion.value = claveProv;
+    opcion.textContent = prov.nombre;
+    selectProvincia.appendChild(opcion);
+  });
+
+  function actualizarCiudades(claveProv, ciudadSeleccionadaId = null) {
+    const prov = DIVISION_TERRITORIAL.provincias[claveProv];
+    if (!prov) return;
+
+    selectCiudad.innerHTML = '';
+    prov.ciudades.forEach(ciu => {
+      const opcion = document.createElement('option');
+      opcion.value = ciu.id;
+      opcion.textContent = ciu.nombre;
+      selectCiudad.appendChild(opcion);
+    });
+
+    if (ciudadSeleccionadaId) {
+      selectCiudad.value = ciudadSeleccionadaId;
+    }
+  }
+
+  // Establecer valor inicial (Guayas / Guayaquil Centro)
+  selectProvincia.value = 'guayas';
+  actualizarCiudades('guayas', 'gye_centro');
+
+  // Evento: Cambio de provincia
+  selectProvincia.addEventListener('change', () => {
+    const claveProv = selectProvincia.value;
+    actualizarCiudades(claveProv);
+
+    const prov = DIVISION_TERRITORIAL.provincias[claveProv];
+    if (prov) {
+      mapa.flyTo(prov.centro, prov.zoom, { duration: 1.0 });
+    }
+
+    if (btnNacional) btnNacional.classList.remove('active');
+    pillsRapidos.forEach(p => p.classList.remove('active'));
+  });
+
+  // Evento: Cambio de ciudad / sector
+  selectCiudad.addEventListener('change', () => {
+    const claveProv = selectProvincia.value;
+    const prov = DIVISION_TERRITORIAL.provincias[claveProv];
+    if (!prov) return;
+
+    const ciudadId = selectCiudad.value;
+    const ciudadObj = prov.ciudades.find(c => c.id === ciudadId);
+    if (ciudadObj) {
+      mapa.flyTo(ciudadObj.centro, ciudadObj.zoom, { duration: 1.0 });
+    }
+
+    if (btnNacional) btnNacional.classList.remove('active');
+    pillsRapidos.forEach(p => p.classList.remove('active'));
+
+    // En móviles/tablets, cerrar la consola automáticamente para apreciar el vuelo al sector
+    if (window.innerWidth <= 768) {
+      alternarConsolaOpciones(false);
+    }
+  });
+
+  // Evento: Botón Nacional (Ecuador Completo)
+  if (btnNacional) {
+    btnNacional.addEventListener('click', () => {
+      btnNacional.classList.add('active');
+      pillsRapidos.forEach(p => p.classList.remove('active'));
+      mapa.flyTo(DIVISION_TERRITORIAL.pais.centro, DIVISION_TERRITORIAL.pais.zoom, { duration: 1.0 });
+
+      if (window.innerWidth <= 768) {
+        alternarConsolaOpciones(false);
+      }
+    });
+  }
+
+  // Evento: Accesos rápidos directos (Pills)
+  pillsRapidos.forEach(pill => {
+    pill.addEventListener('click', () => {
+      const valor = pill.getAttribute('data-quick') || '';
+      const [claveProv, ciudadId] = valor.split(':');
+      if (DIVISION_TERRITORIAL.provincias[claveProv]) {
+        selectProvincia.value = claveProv;
+        actualizarCiudades(claveProv, ciudadId);
+
+        const prov = DIVISION_TERRITORIAL.provincias[claveProv];
+        const ciudadObj = prov.ciudades.find(c => c.id === ciudadId);
+        if (ciudadObj) {
+          mapa.flyTo(ciudadObj.centro, ciudadObj.zoom, { duration: 1.0 });
+        }
+
+        if (btnNacional) btnNacional.classList.remove('active');
+        pillsRapidos.forEach(p => p.classList.remove('active'));
+        pill.classList.add('active');
+
+        if (window.innerWidth <= 768) {
+          alternarConsolaOpciones(false);
+        }
+      }
+    });
+  });
 }
 
 function alternarConsolaOpciones(forzarEstado = null) {
@@ -752,10 +1148,24 @@ function mostrarEstadoCarga(cargando, mensaje = 'Sincronizando...') {
   }
 }
 
+function esDispositivoConGPS() {
+  const ua = navigator.userAgent || '';
+  // Detecta si el dispositivo es móvil o tablet (equipos con receptor GPS dedicado)
+  const esMovil = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(ua) ||
+                  Boolean(navigator.userAgentData && navigator.userAgentData.mobile) ||
+                  (Boolean(navigator.maxTouchPoints && navigator.maxTouchPoints > 1) && window.innerWidth <= 1024);
+  return esMovil;
+}
+
 function solicitarUbicacionUsuario(centrarAlEncontrar = false) {
+  // En PC sin GPS o en segundo plano, NUNCA solicitar ubicación para evitar el diálogo de permisos
+  if (!centrarAlEncontrar && !esDispositivoConGPS()) {
+    return;
+  }
+
   if (!navigator.geolocation) {
     if (centrarAlEncontrar) {
-      alert('Tu navegador no soporta geolocalización.');
+      alert('Tu navegador o dispositivo no soporta geolocalización.');
     }
     return;
   }

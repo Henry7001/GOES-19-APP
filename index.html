@@ -227,23 +227,34 @@
           </div>
         </div>
 
-        <!-- Section: Enfoque Territorial (Lugares) -->
+        <!-- Section: Enfoque Territorial (Combos Provincia y Ciudad/Sector) -->
         <div class="drawer-section">
-          <div class="section-label">ENFOQUE TERRITORIAL (LUGARES)</div>
-          <div class="places-grid" id="places-selector">
-            <button class="place-btn active full-width" data-place="pais">🌐 Ecuador (Vista Nacional)</button>
-            <button class="place-btn" data-place="guayaquil">Guayaquil</button>
-            <button class="place-btn" data-place="quito">Quito</button>
-            <button class="place-btn" data-place="cuenca">Cuenca</button>
-            <button class="place-btn" data-place="manta">Manta</button>
-            <button class="place-btn" data-place="santodomingo">Sto. Domingo</button>
-            <button class="place-btn" data-place="machala">Machala</button>
-            <button class="place-btn" data-place="esmeraldas">Esmeraldas</button>
-            <button class="place-btn" data-place="ambato">Ambato</button>
-            <button class="place-btn" data-place="loja">Loja</button>
-            <button class="place-btn" data-place="coca">El Coca</button>
-            <button class="place-btn" data-place="puyo">Puyo</button>
-            <button class="place-btn" data-place="galapagos">Galápagos</button>
+          <div class="section-label">ENFOQUE TERRITORIAL</div>
+          <div class="territory-box">
+            <button class="territory-national-btn active" id="btn-focus-national">
+              🌐 Ecuador (Vista Nacional)
+            </button>
+
+            <div class="territory-select-group">
+              <label for="select-provincia" class="territory-select-label">PROVINCIA</label>
+              <select id="select-provincia" class="territory-select">
+                <!-- Se puebla dinámicamente -->
+              </select>
+            </div>
+
+            <div class="territory-select-group">
+              <label for="select-ciudad" class="territory-select-label">CIUDAD / SECTOR / CANTÓN</label>
+              <select id="select-ciudad" class="territory-select">
+                <!-- Se puebla según la provincia -->
+              </select>
+            </div>
+
+            <div class="territory-shortcuts">
+              <button class="t-pill" data-quick="guayas:gye_centro">Guayaquil</button>
+              <button class="t-pill" data-quick="pichincha:uio_centro">Quito</button>
+              <button class="t-pill" data-quick="azuay:cue_centro">Cuenca</button>
+              <button class="t-pill" data-quick="manabi:manta">Manta</button>
+            </div>
           </div>
         </div>
 
