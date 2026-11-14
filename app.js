@@ -524,7 +524,9 @@ let detectorRayosActivo = Memoria.obtener('detector_rayos_activo', 'true') !== '
 let alertaSonoraRayosActiva = Memoria.obtener('alerta_sonora_rayos_activa', 'false') === 'true';
 let temporizadorRayos = null;
 let ultimoConteoRayos = 0;
+let ultimosRayosEcuador = [];
 let coordenadasUsuarioActual = null;
+let marcadorClimaSeleccionado = null;
 
 document.addEventListener('DOMContentLoaded', () => {
   const appRoot = document.getElementById('app-root');
@@ -620,6 +622,13 @@ function iniciarMapa() {
 
     clearTimeout(temporizadorMovimiento);
     temporizadorMovimiento = setTimeout(renderizarImagenSatelital, 300);
+  });
+
+  // Clic en cualquier punto del mapa para consultar e interpretar clima
+  mapa.on('click', (e) => {
+    const lat = e.latlng.lat;
+    const lon = e.latlng.lng;
+    mostrarClimaCiudad(null, lat, lon);
   });
 }
 
@@ -1472,6 +1481,7 @@ async function actualizarDetectorRayos() {
       return estaEnTerritorioEcuador(lon, lat);
     });
 
+    ultimosRayosEcuador = rayosEcuador;
     renderizarRayos(rayosEcuador);
   } catch (error) {
     console.warn('No se pudo actualizar el detector de rayos:', error);
@@ -1620,6 +1630,316 @@ function calcularDistanciaKm(lat1, lon1, lat2, lon2) {
     Math.sin(dLon / 2) * Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
+}
+
+// ============================================================================
+// INTERPRETACIÓN DEL CLIMA Y DIAGNÓSTICO METEOROLÓGICO POR CIUDAD / COORDENADA
+// ============================================================================
+
+function buscarNombreLugarCercano(lat, lon) {
+  let mejorMatch = null;
+  let distMin = 0.35; // Aprox 38 km máximo para asociación de nombre
+  
+  if (DIVISION_TERRITORIAL && DIVISION_TERRITORIAL.provincias) {
+    Object.keys(DIVISION_TERRITORIAL.provincias).forEach(k => {
+      const p = DIVISION_TERRITORIAL.provincias[k];
+      if (p.ciudades) {
+        p.ciudades.forEach(c => {
+          if (c.id.startsWith('toda_')) return;
+          const dist = Math.hypot(c.centro[0] - lat, c.centro[1] - lon);
+          if (dist < distMin) {
+            distMin = dist;
+            mejorMatch = c.nombre;
+          }
+        });
+      }
+    });
+  }
+  return mejorMatch;
+}
+
+function decodificarCodigoClima(wCode) {
+  const codigos = {
+    0: { desc: 'Cielo completamente despejado', icono: '☀️', riesgo: 'Bajo' },
+    1: { desc: 'Mayormente despejado con nubosidad ligera', icono: '🌤️', riesgo: 'Bajo' },
+    2: { desc: 'Parcialmente nublado', icono: '⛅', riesgo: 'Bajo' },
+    3: { desc: 'Cielo cubierto / Nublado denso', icono: '☁️', riesgo: 'Bajo' },
+    45: { desc: 'Niebla / Neblina en superficie', icono: '🌫️', riesgo: 'Medio (Visibilidad)' },
+    48: { desc: 'Niebla con escarcha o depósito de hielo', icono: '🌫️', riesgo: 'Medio' },
+    51: { desc: 'Llovizna ligera intermitente', icono: '🌦️', riesgo: 'Bajo' },
+    53: { desc: 'Llovizna moderada continua', icono: '🌧️', riesgo: 'Bajo' },
+    55: { desc: 'Llovizna densa y persistente', icono: '🌧️', riesgo: 'Medio' },
+    61: { desc: 'Lluvia ligera constante', icono: '🌧️', riesgo: 'Medio' },
+    63: { desc: 'Lluvia moderada', icono: '🌧️', riesgo: 'Medio' },
+    65: { desc: 'Lluvia fuerte y torrencial', icono: '🌧️⚠️', riesgo: 'Alto (Acumulación)' },
+    71: { desc: 'Nevada ligera en cumbre andina', icono: '🌨️', riesgo: 'Medio' },
+    73: { desc: 'Nevada moderada', icono: '🌨️', riesgo: 'Alto' },
+    75: { desc: 'Nevada intensa / Ventisca', icono: '❄️⚠️', riesgo: 'Muy Alto' },
+    80: { desc: 'Chubascos aislados breves', icono: '🌦️', riesgo: 'Medio' },
+    81: { desc: 'Chubascos moderados a fuertes', icono: '🌧️', riesgo: 'Medio-Alto' },
+    82: { desc: 'Chubascos torrenciales y violentos', icono: '⛈️⚠️', riesgo: 'Alto' },
+    95: { desc: 'Tormenta eléctrica activa', icono: '⚡⛈️', riesgo: 'Alto (Descargas)' },
+    96: { desc: 'Tormenta eléctrica severa con granizo fino', icono: '⛈️❄️', riesgo: 'Muy Alto' },
+    99: { desc: 'Tormenta eléctrica severa con granizo destructivo', icono: '⛈️⚡🌪️', riesgo: 'Extremo' }
+  };
+  return codigos[wCode] || { desc: 'Condiciones variables', icono: '⛅', riesgo: 'Moderado' };
+}
+
+function generarInterpretacionMeteorologica(temp, humedad, lluvia, viento, gust, code, rayosCercanos) {
+  let diagnostico = '';
+  let alertaNivel = 'normal'; // normal, alerta, peligro
+  let clasificacion = 'Condición Estable';
+
+  // 1. Detección de tormenta o actividad eléctrica directa
+  if (code >= 95 || (rayosCercanos && rayosCercanos.count > 0)) {
+    clasificacion = '⚠️ Actividad de Tormenta Eléctrica Convectiva';
+    alertaNivel = 'peligro';
+    if (rayosCercanos && rayosCercanos.distKm <= 20) {
+      diagnostico = `Peligro inminente de tormenta eléctrica activa. Se registran <b>${rayosCercanos.count} descarga(s) GLM</b> a solo <b>${rayosCercanos.distKm.toFixed(1)} km</b> de distancia. Corrientes ascendentes activas con riesgo de rayos directos y vientos cortantes.`;
+    } else {
+      diagnostico = `Celdas convectivas en desarrollo con actividad de rayos satelitales GOES-19 detectados en un radio cercano (${rayosCercanos ? rayosCercanos.distKm.toFixed(1) + ' km' : 'entorno'}).`;
+    }
+  } else if (lluvia > 4.0 || code === 65 || code === 82) {
+    clasificacion = '🌧️ Lluvia Fuerte / Chubascos Convectivos';
+    alertaNivel = 'alerta';
+    diagnostico = `Precipitación densa de alta intensidad (${lluvia.toFixed(1)} mm/h). Atmósfera con saturación hídrica severa (${humedad}% HR) propicia a escorrentía rápida y acumulación de agua.`;
+  } else if (lluvia > 0.1 || code === 61 || code === 63 || code === 80 || code === 81) {
+    clasificacion = '🌦️ Precipitación Moderada / Lloviznas';
+    alertaNivel = 'alerta';
+    diagnostico = `Precipitación activa o chubascos en el sector (${lluvia.toFixed(1)} mm/h) con ambiente muy húmedo (${humedad}% HR). Calzadas mojadas y visibilidad reducida.`;
+  } else if (gust > 45 || viento > 32) {
+    clasificacion = '💨 Vientos Fuertes / Ráfagas Intensas';
+    alertaNivel = 'alerta';
+    diagnostico = `Flujo de viento acelerado con ráfagas de hasta <b>${gust.toFixed(1)} km/h</b>. Posible paso de frente frío, brisa marina o gradiente barométrico marcado.`;
+  } else if (humedad > 90 && temp < 20) {
+    clasificacion = '🌫️ Neblina / Humedad de Saturación';
+    diagnostico = `Ambiente fresco (${temp.toFixed(1)}°C) y saturado de humedad (${humedad}% HR), favoreciendo la condensación de niebla en valles o estribaciones andinas.`;
+  } else if (temp > 31 && humedad > 65) {
+    clasificacion = '☀️ Sensación Térmica Bochorno Tropical';
+    diagnostico = `Alta temperatura (${temp.toFixed(1)}°C) combinada con vapor de agua (${humedad}% HR), elevando el índice de calor y la energía potencial disponible para convección vespertina.`;
+  } else {
+    clasificacion = '⛅ Estabilidad Atmosférica Relativa';
+    diagnostico = `Condiciones estables sin desarrollo convectivo severo inmediato en el sector. Viento moderado de ${viento.toFixed(1)} km/h y temperatura de ${temp.toFixed(1)}°C.`;
+  }
+
+  return { diagnostico, alertaNivel, clasificacion };
+}
+
+function calcularRayosCercanosPunto(lat, lon, radioMaxKm = 50) {
+  if (!ultimosRayosEcuador || ultimosRayosEcuador.length === 0) return null;
+  let conteo = 0;
+  let distMinima = Infinity;
+
+  ultimosRayosEcuador.forEach(r => {
+    if (!r.geometry || !r.geometry.coordinates) return;
+    const [rLon, rLat] = r.geometry.coordinates;
+    const d = calcularDistanciaKm(lat, lon, rLat, rLon);
+    if (d <= radioMaxKm) {
+      conteo++;
+      if (d < distMinima) distMinima = d;
+    }
+  });
+
+  if (conteo === 0) return null;
+  return { count: conteo, distKm: distMinima };
+}
+
+async function obtenerNombrePorCoordenadas(lat, lon) {
+  // Intentar primero búsqueda en catálogo local
+  const localMatch = buscarNombreLugarCercano(lat, lon);
+  if (localMatch) return localMatch;
+
+  // Si no está en catálogo o es una coordenada libre, consultar geocodificación inversa
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 2000);
+    const resp = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat.toFixed(4)}&lon=${lon.toFixed(4)}&format=json&accept-language=es`, {
+      signal: controller.signal
+    });
+    clearTimeout(timeout);
+    if (resp.ok) {
+      const datos = await resp.json();
+      if (datos && datos.address) {
+        const addr = datos.address;
+        const nombreUbicacion = addr.city || addr.town || addr.village || addr.municipality || addr.county || addr.suburb || addr.state;
+        const estado = addr.state || '';
+        if (nombreUbicacion) {
+          return estado && estado !== nombreUbicacion ? `${nombreUbicacion}, ${estado}` : nombreUbicacion;
+        }
+      }
+    }
+  } catch (e) {
+    // Retorno de contingencia a coordenadas
+  }
+
+  return `Punto Coordenada (${lat.toFixed(3)}°, ${lon.toFixed(3)}°)`;
+}
+
+async function mostrarClimaCiudad(nombreLugar, lat, lon) {
+  let nombreFinal = nombreLugar || buscarNombreLugarCercano(lat, lon);
+  const esNombreTemporal = !nombreFinal;
+  if (!nombreFinal) {
+    nombreFinal = `Coordenadas: ${lat.toFixed(4)}°, ${lon.toFixed(4)}°`;
+  }
+
+  if (marcadorClimaSeleccionado) {
+    mapa.removeLayer(marcadorClimaSeleccionado);
+    marcadorClimaSeleccionado = null;
+  }
+
+  const iconoSeleccion = L.divIcon({
+    className: 'city-weather-target-marker',
+    html: '<div class="weather-target-pulse"></div><div class="weather-target-dot"></div>',
+    iconSize: [28, 28],
+    iconAnchor: [14, 14]
+  });
+
+  marcadorClimaSeleccionado = L.marker([lat, lon], {
+    icon: iconoSeleccion,
+    zIndexOffset: 920
+  }).addTo(mapa);
+
+  // Popup de carga táctico
+  const popupCargaHtml = `
+    <div class="weather-popup-card">
+      <div class="wp-header">
+        <div class="wp-title-box">
+          <span class="wp-badge">METEOROLOGÍA TÁCTICA</span>
+          <h4 class="wp-name">${nombreFinal}</h4>
+        </div>
+      </div>
+      <div class="wp-loading">
+        <div class="wp-spinner"></div>
+        <span>Consultando sensores meteorológicos y satélite...</span>
+      </div>
+    </div>
+  `;
+
+  marcadorClimaSeleccionado.bindPopup(popupCargaHtml, {
+    maxWidth: 340,
+    className: 'custom-weather-popup',
+    autoPan: true
+  }).openPopup();
+
+  try {
+    if (esNombreTemporal) {
+      obtenerNombrePorCoordenadas(lat, lon).then(n => {
+        if (n && marcadorClimaSeleccionado) {
+          const el = document.getElementById('wp-active-name');
+          if (el) el.textContent = n;
+        }
+      });
+    }
+
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat.toFixed(4)}&longitude=${lon.toFixed(4)}&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m,surface_pressure&timezone=auto`;
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error('Error al conectar con la API meteorológica');
+    const data = await resp.json();
+    const cur = data.current || {};
+
+    const temp = cur.temperature_2m !== undefined ? cur.temperature_2m : '--';
+    const sensacion = cur.apparent_temperature !== undefined ? cur.apparent_temperature : temp;
+    const humedad = cur.relative_humidity_2m !== undefined ? cur.relative_humidity_2m : '--';
+    const lluvia = cur.precipitation !== undefined ? cur.precipitation : 0;
+    const viento = cur.wind_speed_10m !== undefined ? cur.wind_speed_10m : 0;
+    const rafaga = cur.wind_gusts_10m !== undefined ? cur.wind_gusts_10m : viento;
+    const presion = cur.surface_pressure !== undefined ? Math.round(cur.surface_pressure) : '--';
+    const code = cur.weather_code !== undefined ? cur.weather_code : 0;
+
+    const infoCode = decodificarCodigoClima(code);
+    const rayosCercanos = calcularRayosCercanosPunto(lat, lon, 45);
+    const interpretacion = generarInterpretacionMeteorologica(temp, humedad, lluvia, viento, rafaga, code, rayosCercanos);
+
+    let alertaBadge = '';
+    if (interpretacion.alertaNivel === 'peligro') {
+      alertaBadge = '<span class="wp-alert-pill pill-danger">⚠️ ALERTA CONVECTIVA</span>';
+    } else if (interpretacion.alertaNivel === 'alerta') {
+      alertaBadge = '<span class="wp-alert-pill pill-warning">⚠️ AVISO METEOROLÓGICO</span>';
+    } else {
+      alertaBadge = '<span class="wp-alert-pill pill-stable">ESTABLE</span>';
+    }
+
+    let bloqueRayos = '';
+    if (rayosCercanos) {
+      bloqueRayos = `
+        <div class="wp-rayos-box">
+          <span class="wp-rayos-icon">⚡</span>
+          <div>
+            <b>${rayosCercanos.count} descargas GLM</b> detectadas a menos de <b>${rayosCercanos.distKm.toFixed(1)} km</b>
+          </div>
+        </div>
+      `;
+    }
+
+    const popupFinalHtml = `
+      <div class="weather-popup-card">
+        <div class="wp-header">
+          <div class="wp-title-box">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+              <span class="wp-badge">DIAGNÓSTICO EN TIEMPO REAL</span>
+              ${alertaBadge}
+            </div>
+            <h4 class="wp-name" id="wp-active-name">${nombreFinal}</h4>
+            <div class="wp-coords mono">Lat: ${lat.toFixed(4)} | Lon: ${lon.toFixed(4)}</div>
+          </div>
+        </div>
+
+        <div class="wp-current-state">
+          <span class="wp-weather-icon">${infoCode.icono}</span>
+          <div class="wp-temp-cluster">
+            <span class="wp-temp mono">${Math.round(temp)}°C</span>
+            <span class="wp-feels">Sensación: ${Math.round(sensacion)}°C</span>
+          </div>
+          <div class="wp-state-text">
+            <b>${infoCode.desc}</b>
+          </div>
+        </div>
+
+        ${bloqueRayos}
+
+        <div class="wp-interpretation">
+          <div class="wp-interp-title">INTERPRETACIÓN ATMOSFÉRICA</div>
+          <p class="wp-interp-desc">${interpretacion.diagnostico}</p>
+        </div>
+
+        <div class="wp-telemetry-grid mono">
+          <div class="wp-tele-cell">
+            <span class="lbl">HUMEDAD</span>
+            <span class="val">${humedad}%</span>
+          </div>
+          <div class="wp-tele-cell">
+            <span class="lbl">LLUVIA</span>
+            <span class="val ${lluvia > 0 ? 'text-amber' : ''}">${lluvia} mm</span>
+          </div>
+          <div class="wp-tele-cell">
+            <span class="lbl">VIENTO</span>
+            <span class="val">${viento} km/h</span>
+          </div>
+          <div class="wp-tele-cell">
+            <span class="lbl">PRESIÓN</span>
+            <span class="val">${presion} hPa</span>
+          </div>
+        </div>
+      </div>
+    `;
+
+    if (marcadorClimaSeleccionado) {
+      marcadorClimaSeleccionado.setPopupContent(popupFinalHtml);
+    }
+  } catch (err) {
+    if (marcadorClimaSeleccionado) {
+      marcadorClimaSeleccionado.setPopupContent(`
+        <div class="weather-popup-card">
+          <div class="wp-header">
+            <h4 class="wp-name">${nombreFinal}</h4>
+          </div>
+          <div style="padding:10px 0; color:#ef4444; font-size:0.75rem;">
+            ⚠️ No se pudo obtener la información meteorológica en este momento. Verifique su conexión de red.
+          </div>
+        </div>
+      `);
+    }
+  }
 }
 
 // Síntesis Web Audio para alerta acústica de tormenta sin dependencias de audio externas
