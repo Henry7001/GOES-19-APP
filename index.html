@@ -286,6 +286,32 @@
       <span class="sync-spin"></span>
       <span id="sync-label">Sincronizando pasada GOES-19...</span>
     </div>
+
+    <!-- Tactical Custom Modal / Alert Component -->
+    <div class="tactical-modal-overlay" id="tactical-modal-overlay">
+      <div class="tactical-modal-card" id="tactical-modal-card">
+        <div class="tm-header">
+          <div class="tm-brand">
+            <span class="tm-dot"></span>
+            <span class="tm-title" id="tm-title">NOTIFICACIÓN DEL SISTEMA</span>
+          </div>
+          <button class="tm-close" id="tm-btn-close" aria-label="Cerrar modal">✕</button>
+        </div>
+        <div class="tm-body">
+          <div class="tm-icon-box" id="tm-icon-box">ℹ️</div>
+          <div class="tm-content">
+            <h4 class="tm-heading" id="tm-heading">Aviso Operativo</h4>
+            <p class="tm-message" id="tm-message">Mensaje del sistema.</p>
+          </div>
+        </div>
+        <div class="tm-footer">
+          <button class="tm-action-btn" id="tm-btn-action">Aceptar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile Tactical Toast Container -->
+    <div class="toast-container" id="toast-container"></div>
   </div>
 
   <!-- Leaflet JS -->

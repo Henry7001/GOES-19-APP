@@ -540,7 +540,8 @@ document.addEventListener('DOMContentLoaded', () => {
   iniciarContadorRecarga();
   iniciarDetectorRayos();
 
-  // Solo solicitar ubicación automáticamente si es un dispositivo con GPS (móvil / tablet)
+  // En PC queda totalmente desactivada la búsqueda automática de ubicación.
+  // Solo en dispositivos móviles/tablets con GPS se intenta de fondo.
   if (esDispositivoConGPS()) {
     solicitarUbicacionUsuario(false);
   }
@@ -1317,6 +1318,84 @@ function mostrarEstadoCarga(cargando, mensaje = 'Sincronizando...') {
   }
 }
 
+// ============================================================================
+// SISTEMA DE NOTIFICACIONES: MODALES TÁCTICOS Y TOASTS RESPONSIVE
+// ============================================================================
+
+function mostrarNotificacion({ titulo = 'Aviso', mensaje = '', icono = 'ℹ️', tipo = 'info', duracion = 4500 }) {
+  const esMovil = window.innerWidth <= 768;
+
+  if (esMovil) {
+    // Modo Mobile: Toast táctico flotante en la parte inferior
+    const contenedorToasts = document.getElementById('toast-container');
+    if (!contenedorToasts) return;
+
+    const toast = document.createElement('div');
+    toast.className = 'tactical-toast';
+    toast.innerHTML = `
+      <div class="toast-icon">${icono}</div>
+      <div class="toast-text-box">
+        <div class="toast-title">${titulo}</div>
+        <div class="toast-desc">${mensaje}</div>
+      </div>
+      <button class="toast-close" aria-label="Cerrar">✕</button>
+    `;
+
+    contenedorToasts.appendChild(toast);
+
+    // Animación de entrada
+    requestAnimationFrame(() => {
+      toast.classList.add('show');
+    });
+
+    const removerToast = () => {
+      toast.classList.remove('show');
+      setTimeout(() => {
+        if (toast.parentElement) toast.remove();
+      }, 300);
+    };
+
+    toast.querySelector('.toast-close').addEventListener('click', removerToast);
+
+    // Autocierre después de unos segundos
+    setTimeout(removerToast, duracion);
+  } else {
+    // Modo Escritorio / Tablet: Modal propio de la aplicación (no del navegador)
+    const overlay = document.getElementById('tactical-modal-overlay');
+    const nodoTitulo = document.getElementById('tm-heading');
+    const nodoMsg = document.getElementById('tm-message');
+    const nodoIcono = document.getElementById('tm-icon-box');
+    const btnCerrar = document.getElementById('tm-btn-close');
+    const btnAccion = document.getElementById('tm-btn-action');
+
+    if (!overlay) return;
+
+    if (nodoTitulo) nodoTitulo.textContent = titulo;
+    if (nodoMsg) nodoMsg.textContent = mensaje;
+    if (nodoIcono) nodoIcono.textContent = icono;
+
+    overlay.classList.add('open');
+
+    const cerrarModal = () => {
+      overlay.classList.remove('open');
+      btnCerrar.removeEventListener('click', cerrarModal);
+      btnAccion.removeEventListener('click', cerrarModal);
+    };
+
+    btnCerrar.addEventListener('click', cerrarModal);
+    btnAccion.addEventListener('click', cerrarModal);
+
+    // Cerrar con Escape o clic fuera
+    const listenerEsc = (e) => {
+      if (e.key === 'Escape' || e.target === overlay) {
+        cerrarModal();
+        window.removeEventListener('keydown', listenerEsc);
+      }
+    };
+    window.addEventListener('keydown', listenerEsc);
+  }
+}
+
 function esDispositivoConGPS() {
   const ua = navigator.userAgent || '';
   // Detecta si el dispositivo es móvil o tablet (equipos con receptor GPS dedicado)
@@ -1327,14 +1406,25 @@ function esDispositivoConGPS() {
 }
 
 function solicitarUbicacionUsuario(centrarAlEncontrar = false) {
-  // En PC sin GPS o en segundo plano, NUNCA solicitar ubicación para evitar el diálogo de permisos
-  if (!centrarAlEncontrar && !esDispositivoConGPS()) {
+  // En PC queda completamente deshabilitado el llamado a geolocalización
+  if (!esDispositivoConGPS()) {
+    if (centrarAlEncontrar) {
+      mostrarNotificacion({
+        titulo: 'Geolocalización GPS',
+        mensaje: 'La geolocalización satelital por GPS solo está disponible en dispositivos móviles. En PC puedes consultar el clima haciendo clic en cualquier punto del mapa o usando el selector territorial.',
+        icono: '📍'
+      });
+    }
     return;
   }
 
   if (!navigator.geolocation) {
     if (centrarAlEncontrar) {
-      alert('Tu navegador o dispositivo no soporta geolocalización.');
+      mostrarNotificacion({
+        titulo: 'Dispositivo no compatible',
+        mensaje: 'Tu navegador o dispositivo móvil no soporta geolocalización por hardware.',
+        icono: '⚠️'
+      });
     }
     return;
   }
@@ -1417,13 +1507,17 @@ function solicitarUbicacionUsuario(centrarAlEncontrar = false) {
       if (centrarAlEncontrar) {
         let mensaje = 'No fue posible obtener tu ubicación.';
         if (error.code === error.PERMISSION_DENIED) {
-          mensaje = 'Permiso denegado para acceder a la ubicación. Puedes habilitarlo en los permisos del navegador.';
+          mensaje = 'Permiso denegado para acceder a la ubicación. Puedes habilitarlo en la configuración del navegador.';
         } else if (error.code === error.POSITION_UNAVAILABLE) {
-          mensaje = 'La ubicación no está disponible en este momento.';
+          mensaje = 'La señal de ubicación GPS no está disponible en este momento.';
         } else if (error.code === error.TIMEOUT) {
-          mensaje = 'Tiempo de espera agotado al consultar tu ubicación.';
+          mensaje = 'Tiempo de espera agotado al consultar los satélites de posición.';
         }
-        alert(mensaje);
+        mostrarNotificacion({
+          titulo: 'Aviso de Ubicación',
+          mensaje: mensaje,
+          icono: '⚠️'
+        });
       }
     },
     {
@@ -1633,29 +1727,89 @@ function calcularDistanciaKm(lat1, lon1, lat2, lon2) {
 }
 
 // ============================================================================
-// INTERPRETACIÓN DEL CLIMA Y DIAGNÓSTICO METEOROLÓGICO POR CIUDAD / COORDENADA
+// INTERPRETACIÓN DEL CLIMA Y DIAGNÓSTICO METEOROLÓGICO POR COORDENADAS
+// (Geocodificación inversa pública en tiempo real: Barrio / Sector / Cantón)
 // ============================================================================
 
-function buscarNombreLugarCercano(lat, lon) {
-  let mejorMatch = null;
-  let distMin = 0.35; // Aprox 38 km máximo para asociación de nombre
-  
-  if (DIVISION_TERRITORIAL && DIVISION_TERRITORIAL.provincias) {
-    Object.keys(DIVISION_TERRITORIAL.provincias).forEach(k => {
-      const p = DIVISION_TERRITORIAL.provincias[k];
-      if (p.ciudades) {
-        p.ciudades.forEach(c => {
-          if (c.id.startsWith('toda_')) return;
-          const dist = Math.hypot(c.centro[0] - lat, c.centro[1] - lon);
-          if (dist < distMin) {
-            distMin = dist;
-            mejorMatch = c.nombre;
-          }
-        });
+async function obtenerGeolocalizacionPublica(lat, lon) {
+  try {
+    const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&zoom=18&addressdetails=1`;
+    const resp = await fetch(url, {
+      headers: {
+        'Accept': 'application/json',
+        'User-Agent': 'GOES19-App-WeatherMonitor/1.0'
       }
     });
+    if (!resp.ok) throw new Error('Geocodificación no disponible');
+    const data = await resp.json();
+    const addr = data.address || {};
+    const dataClass = data.class || '';
+    const dataType = data.type || '';
+
+    // Clases que representan edificios, comercios, parques, iglesias o lugares con nombre propio
+    const esPOIEspecifico = [
+      'amenity', 'shop', 'tourism', 'leisure', 'building', 
+      'office', 'historic', 'craft', 'emergency', 'sports'
+    ].includes(dataClass) || ['hospital', 'school', 'university', 'place_of_worship', 'park', 'mall', 'stadium'].includes(dataType);
+
+    // 1. Verificar si el puntero está directamente sobre un edificio, parque, comercio o lugar con nombre
+    let nombreLugarEspecifico = null;
+    const camposPOI = [
+      addr.amenity, addr.shop, addr.tourism, addr.leisure, addr.building, 
+      addr.park, addr.hospital, addr.school, addr.place_of_worship, addr.historic,
+      addr.office, addr.commercial, addr.retail
+    ];
+    for (const val of camposPOI) {
+      if (val && typeof val === 'string' && val.trim().length > 1) {
+        nombreLugarEspecifico = val.trim();
+        break;
+      }
+    }
+
+    if (!nombreLugarEspecifico && esPOIEspecifico && data.name && data.name.trim().length > 1) {
+      nombreLugarEspecifico = data.name.trim();
+    }
+
+    // 2. Extraer sector / barrio interno / vecindario / cooperativa
+    const barrio = addr.neighbourhood || addr.quarter || addr.suburb || addr.city_district || addr.residential || addr.hamlet || addr.village;
+    const calle = addr.road || addr.pedestrian || addr.footway || addr.path;
+    const ciudad = addr.city || addr.town || addr.municipality || addr.county;
+    const provincia = addr.state || addr.region;
+
+    let titulo = '';
+    let subtitulo = '';
+
+    if (nombreLugarEspecifico) {
+      // CASO A: Directamente sobre un edificio, parque, comercio o instalación
+      titulo = `🏛️ ${nombreLugarEspecifico}`;
+      const ubicacionContenedora = barrio || calle || ciudad;
+      subtitulo = ubicacionContenedora ? `${ubicacionContenedora}${ciudad && ciudad !== ubicacionContenedora ? ', ' + ciudad : ''}` : (ciudad || 'Ecuador');
+    } else {
+      // CASO B: En la calle, pasaje o casa particular sin nombre específico -> Mostrar el Sector / Barrio
+      if (barrio && ciudad) {
+        titulo = barrio;
+        subtitulo = calle ? `${calle} • ${ciudad}` : `${ciudad}${provincia ? ', ' + provincia : ''}`;
+      } else if (calle && ciudad) {
+        titulo = calle;
+        subtitulo = `${ciudad}${provincia ? ', ' + provincia : ''}`;
+      } else if (ciudad) {
+        titulo = ciudad;
+        subtitulo = provincia ? provincia : 'Ecuador';
+      } else {
+        titulo = `Coordenadas (${lat.toFixed(4)}, ${lon.toFixed(4)})`;
+        subtitulo = 'Ecuador';
+      }
+    }
+
+    return { titulo, subtitulo, full: data.display_name || '' };
+  } catch (e) {
+    console.warn('Fallo geocodificación inversa:', e);
+    return {
+      titulo: `Coordenadas (${lat.toFixed(4)}, ${lon.toFixed(4)})`,
+      subtitulo: 'Ecuador',
+      full: ''
+    };
   }
-  return mejorMatch;
 }
 
 function decodificarCodigoClima(wCode) {
@@ -1744,44 +1898,7 @@ function calcularRayosCercanosPunto(lat, lon, radioMaxKm = 50) {
   return { count: conteo, distKm: distMinima };
 }
 
-async function obtenerNombrePorCoordenadas(lat, lon) {
-  // Intentar primero búsqueda en catálogo local
-  const localMatch = buscarNombreLugarCercano(lat, lon);
-  if (localMatch) return localMatch;
-
-  // Si no está en catálogo o es una coordenada libre, consultar geocodificación inversa
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 2000);
-    const resp = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat.toFixed(4)}&lon=${lon.toFixed(4)}&format=json&accept-language=es`, {
-      signal: controller.signal
-    });
-    clearTimeout(timeout);
-    if (resp.ok) {
-      const datos = await resp.json();
-      if (datos && datos.address) {
-        const addr = datos.address;
-        const nombreUbicacion = addr.city || addr.town || addr.village || addr.municipality || addr.county || addr.suburb || addr.state;
-        const estado = addr.state || '';
-        if (nombreUbicacion) {
-          return estado && estado !== nombreUbicacion ? `${nombreUbicacion}, ${estado}` : nombreUbicacion;
-        }
-      }
-    }
-  } catch (e) {
-    // Retorno de contingencia a coordenadas
-  }
-
-  return `Punto Coordenada (${lat.toFixed(3)}°, ${lon.toFixed(3)}°)`;
-}
-
 async function mostrarClimaCiudad(nombreLugar, lat, lon) {
-  let nombreFinal = nombreLugar || buscarNombreLugarCercano(lat, lon);
-  const esNombreTemporal = !nombreFinal;
-  if (!nombreFinal) {
-    nombreFinal = `Coordenadas: ${lat.toFixed(4)}°, ${lon.toFixed(4)}°`;
-  }
-
   if (marcadorClimaSeleccionado) {
     mapa.removeLayer(marcadorClimaSeleccionado);
     marcadorClimaSeleccionado = null;
@@ -1799,18 +1916,19 @@ async function mostrarClimaCiudad(nombreLugar, lat, lon) {
     zIndexOffset: 920
   }).addTo(mapa);
 
-  // Popup de carga táctico
+  // 1. Popup de carga táctico con coordenadas inmediatas
   const popupCargaHtml = `
     <div class="weather-popup-card">
       <div class="wp-header">
         <div class="wp-title-box">
-          <span class="wp-badge">METEOROLOGÍA TÁCTICA</span>
-          <h4 class="wp-name">${nombreFinal}</h4>
+          <span class="wp-badge">LOCALIZANDO SECTOR Y METEOROLOGÍA</span>
+          <h4 class="wp-name">Identificando barrio / sector...</h4>
+          <div class="wp-coords mono">Lat: ${lat.toFixed(4)} | Lon: ${lon.toFixed(4)}</div>
         </div>
       </div>
       <div class="wp-loading">
         <div class="wp-spinner"></div>
-        <span>Consultando sensores meteorológicos y satélite...</span>
+        <span>Consultando geocodificación y sensores satelitales...</span>
       </div>
     </div>
   `;
@@ -1822,20 +1940,20 @@ async function mostrarClimaCiudad(nombreLugar, lat, lon) {
   }).openPopup();
 
   try {
-    if (esNombreTemporal) {
-      obtenerNombrePorCoordenadas(lat, lon).then(n => {
-        if (n && marcadorClimaSeleccionado) {
-          const el = document.getElementById('wp-active-name');
-          if (el) el.textContent = n;
-        }
-      });
-    }
+    // 2. Ejecutar geocodificación inversa pública (Nominatim OSM) y Open-Meteo en paralelo
+    const urlMeteo = `https://api.open-meteo.com/v1/forecast?latitude=${lat.toFixed(4)}&longitude=${lon.toFixed(4)}&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m,surface_pressure&timezone=auto`;
 
-    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat.toFixed(4)}&longitude=${lon.toFixed(4)}&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m,surface_pressure&timezone=auto`;
-    const resp = await fetch(url);
-    if (!resp.ok) throw new Error('Error al conectar con la API meteorológica');
-    const data = await resp.json();
+    const [geoResult, respMeteo] = await Promise.all([
+      obtenerGeolocalizacionPublica(lat, lon),
+      fetch(urlMeteo)
+    ]);
+
+    if (!respMeteo.ok) throw new Error('Error al conectar con la API meteorológica');
+    const data = await respMeteo.json();
     const cur = data.current || {};
+
+    const tituloLugar = geoResult.titulo || `Sector (${lat.toFixed(3)}, ${lon.toFixed(3)})`;
+    const subtituloLugar = geoResult.subtitulo ? `<div class="wp-subtitulo">${geoResult.subtitulo}</div>` : '';
 
     const temp = cur.temperature_2m !== undefined ? cur.temperature_2m : '--';
     const sensacion = cur.apparent_temperature !== undefined ? cur.apparent_temperature : temp;
@@ -1879,8 +1997,9 @@ async function mostrarClimaCiudad(nombreLugar, lat, lon) {
               <span class="wp-badge">DIAGNÓSTICO EN TIEMPO REAL</span>
               ${alertaBadge}
             </div>
-            <h4 class="wp-name" id="wp-active-name">${nombreFinal}</h4>
-            <div class="wp-coords mono">Lat: ${lat.toFixed(4)} | Lon: ${lon.toFixed(4)}</div>
+            <h4 class="wp-name">${tituloLugar}</h4>
+            ${subtituloLugar}
+            <div class="wp-coords mono">📍 Lat: ${lat.toFixed(4)} | Lon: ${lon.toFixed(4)}</div>
           </div>
         </div>
 
@@ -1931,7 +2050,7 @@ async function mostrarClimaCiudad(nombreLugar, lat, lon) {
       marcadorClimaSeleccionado.setPopupContent(`
         <div class="weather-popup-card">
           <div class="wp-header">
-            <h4 class="wp-name">${nombreFinal}</h4>
+            <h4 class="wp-name">Coordenadas (${lat.toFixed(4)}, ${lon.toFixed(4)})</h4>
           </div>
           <div style="padding:10px 0; color:#ef4444; font-size:0.75rem;">
             ⚠️ No se pudo obtener la información meteorológica en este momento. Verifique su conexión de red.
