@@ -1039,15 +1039,37 @@ function iniciarSelectorTerritorial() {
     if (!prov) return;
 
     selectCiudad.innerHTML = '';
-    prov.ciudades.forEach(ciu => {
-      const opcion = document.createElement('option');
-      opcion.value = ciu.id;
-      opcion.textContent = ciu.nombre;
-      selectCiudad.appendChild(opcion);
+
+    // Encontrar la opción provincial general si existe
+    const opcionToda = prov.ciudades.find(c => c.id.startsWith('toda_'));
+    const otrasCiudades = prov.ciudades.filter(c => !c.id.startsWith('toda_'));
+
+    // 1. Poner siempre primero la vista completa de la provincia
+    if (opcionToda) {
+      const opt = document.createElement('option');
+      opt.value = opcionToda.id;
+      opt.textContent = opcionToda.nombre;
+      selectCiudad.appendChild(opt);
+    } else {
+      const opt = document.createElement('option');
+      opt.value = 'toda_provincia_general';
+      opt.textContent = `── Toda la provincia (${prov.nombre}) ──`;
+      selectCiudad.appendChild(opt);
+    }
+
+    // 2. Agregar los cantones, ciudades y sectores
+    otrasCiudades.forEach(ciu => {
+      const opt = document.createElement('option');
+      opt.value = ciu.id;
+      opt.textContent = ciu.nombre;
+      selectCiudad.appendChild(opt);
     });
 
     if (ciudadSeleccionadaId) {
       selectCiudad.value = ciudadSeleccionadaId;
+    } else {
+      // Por defecto seleccionar la primera opción (Toda la provincia)
+      selectCiudad.selectedIndex = 0;
     }
   }
 
@@ -1099,6 +1121,8 @@ function iniciarSelectorTerritorial() {
     const ciudadObj = prov.ciudades.find(c => c.id === ciudadId);
     if (ciudadObj) {
       mapa.flyTo(ciudadObj.centro, ciudadObj.zoom, { duration: 1.0 });
+    } else if (ciudadId === 'toda_provincia_general') {
+      mapa.flyTo(prov.centro, prov.zoom, { duration: 1.0 });
     }
 
     if (btnNacional) btnNacional.classList.remove('active');
